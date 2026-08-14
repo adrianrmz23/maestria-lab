@@ -1,6 +1,6 @@
 {
   "name": "maestria-lab",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -11,6 +11,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.100",
     "@supabase/supabase-js": "^2.111.0",
     "lucide-react": "1.28.0",
     "mammoth": "^1.12.0",

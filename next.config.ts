@@ -3,10 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
-  // PDF.js resolves its fake worker relative to its own package files in Node.
-  // Keeping pdfjs-dist external prevents Turbopack from relocating pdf.mjs into
-  // .next/server/chunks, where the sibling pdf.worker.mjs no longer exists.
-  serverExternalPackages: ["pdfjs-dist"],
+  // PDF.js y @napi-rs/canvas usan capacidades específicas de Node.
+  // Mantenerlos fuera del bundle evita que Turbopack/Next reubiquen los
+  // archivos de PDF.js o empaqueten incorrectamente el binding nativo canvas.
+  serverExternalPackages: ["pdfjs-dist", "@napi-rs/canvas"],
 };
 
 export default nextConfig;

@@ -193,3 +193,10 @@ Consulta también `PRODUCTION-CHECKLIST.md`.
 - Dependencias de hooks corregidas en Manifest y Tutor.
 - `postcss.config.mjs` sin export anónimo.
 - La regla `react-hooks/set-state-in-effect` se desactiva de forma explícita porque esta v1 usa efectos de cliente para hidratar/cargar estado remoto; se mantienen activas `rules-of-hooks` y `exhaustive-deps`.
+
+## Vercel / PDF.js
+
+La extracción PDF en producción carga explícitamente `@napi-rs/canvas` antes de
+`pdfjs-dist` para proporcionar `DOMMatrix`, `ImageData` y `Path2D` en Node.
+Ambos paquetes se mantienen en `serverExternalPackages` para que Next.js no
+reempaquete el binding nativo ni desplace los archivos internos de PDF.js.

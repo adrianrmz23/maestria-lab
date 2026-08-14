@@ -43,8 +43,26 @@ function makePreview(value: string) {
   return compact.length > 900 ? `${compact.slice(0, 900).trimEnd()}…` : compact;
 }
 
+async function loadPdfJsForNode() {
+  // pdfjs-dist 5.x espera APIs de Canvas que no son globals nativos en Node.
+  // Cargarlas explícitamente evita que el resultado dependa de la detección
+  // interna de PDF.js, que puede fallar al ejecutarse dentro de Vercel/Next.
+  const canvas = await import("@napi-rs/canvas");
+  const runtime = globalThis as unknown as {
+    DOMMatrix?: unknown;
+    ImageData?: unknown;
+    Path2D?: unknown;
+  };
+
+  runtime.DOMMatrix ??= canvas.DOMMatrix;
+  runtime.ImageData ??= canvas.ImageData;
+  runtime.Path2D ??= canvas.Path2D;
+
+  return import("pdfjs-dist/legacy/build/pdf.mjs");
+}
+
 async function extractPdf(buffer: Buffer): Promise<DocumentExtraction> {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const pdfjs = await loadPdfJsForNode();
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
     useSystemFonts: true,
