@@ -93,9 +93,39 @@ function conceptBrief(manifest: LearningManifest, topic: LearningTopic, concept:
   ].join("\n");
 }
 
+function visibleConceptScope(manifest: LearningManifest, topic: LearningTopic, concept: LearningConcept) {
+  const examples = concept.examples.map((example) => `- ${example.title}: ${example.content}`).join("\n") || "- Sin ejemplos visibles.";
+  const mistakes = concept.commonMistakes.map((item) => `- ${item}`).join("\n") || "- Sin errores comunes explícitos.";
+  const prerequisites = concept.prerequisites.map((item) => `- ${item}`).join("\n") || "- Sin prerrequisitos explícitos.";
+  const currentConceptIndex = topic.concepts.findIndex((item) => item.id === concept.id);
+  const laterConcepts = manifest.topics
+    .flatMap((manifestTopic) => manifestTopic.concepts.map((item, conceptIndex) => ({ topicOrder: manifestTopic.order, topicId: manifestTopic.id, conceptIndex, concept: item })))
+    .filter((item) => item.topicOrder > topic.order || (item.topicId === topic.id && item.conceptIndex > currentConceptIndex))
+    .map((item) => `- ${item.concept.title}`)
+    .join("\n");
+
+  return [
+    "ALCANCE VISIBLE Y EVALUABLE — NO SALGAS DE AQUÍ:",
+    `Tema actual: ${topic.title}`,
+    `Resumen del tema mostrado: ${topic.summary}`,
+    `Concepto actual: ${concept.title}`,
+    `Resumen de fuente mostrado: ${concept.sourceSummary}`,
+    `Explicación fácil mostrada: ${concept.easy}`,
+    `Nivel Maestría mostrado: ${concept.masters}`,
+    `Por qué importa mostrado: ${concept.whyItMatters}`,
+    "Prerrequisitos visibles:", prerequisites,
+    "Errores comunes visibles:", mistakes,
+    "Ejemplos visibles:", examples,
+    "",
+    "CONCEPTOS FUERA DEL ALCANCE DE ESTE CUESTIONARIO (aunque aparezcan en otras páginas/unidades del documento):",
+    laterConcepts || "- Ninguno.",
+  ].join("\n");
+}
+
 function allExperienceRefs(experience: ConceptExperience) {
   return [
     ...experience.lab.sourceRefs,
+    ...(experience.inlineQuiz ?? []).flatMap((exercise) => exercise.sourceRefs),
     ...experience.exercises.flatMap((exercise) => exercise.sourceRefs),
   ];
 }
@@ -107,12 +137,24 @@ function normalizeExperience(experience: ConceptExperience, topicId: string, con
   experience.conceptTitle = concept.title;
 
   const seen = new Set<string>();
-  experience.exercises = experience.exercises.map((exercise, index) => {
-    let id = exercise.id?.trim() || `ejercicio-${index + 1}`;
+  const normalizeExerciseIds = (items: PracticeExercise[], prefix: string) => items.map((exercise, index) => {
+    let id = exercise.id?.trim() || `${prefix}-${index + 1}`;
+    if (!id.startsWith(`${prefix}-`)) id = `${prefix}-${id}`;
     while (seen.has(id)) id = `${id}-${index + 1}`;
     seen.add(id);
     return { ...exercise, id };
   });
+
+  experience.inlineQuiz = normalizeExerciseIds(experience.inlineQuiz ?? [], "quiz");
+  experience.exercises = normalizeExerciseIds(experience.exercises, "practica");
+
+  if (experience.inlineQuiz.length !== 6) throw new Error("El cuestionario del concepto debe contener exactamente 6 preguntas.");
+  const quizLevelCounts = new Map<number, number>();
+  for (const exercise of experience.inlineQuiz) quizLevelCounts.set(exercise.level, (quizLevelCounts.get(exercise.level) ?? 0) + 1);
+  if ((quizLevelCounts.get(2) ?? 0) < 2 || (quizLevelCounts.get(3) ?? 0) < 2) {
+    throw new Error("El cuestionario necesita al menos 2 preguntas de razonamiento y 2 de transferencia.");
+  }
+  if ((quizLevelCounts.get(1) ?? 0) > 2) throw new Error("El cuestionario no puede incluir más de 2 preguntas de fundamento.");
 
   const levelCounts = new Map<number, number>();
   for (const exercise of experience.exercises) levelCounts.set(exercise.level, (levelCounts.get(exercise.level) ?? 0) + 1);
@@ -147,7 +189,7 @@ function normalizeExperience(experience: ConceptExperience, topicId: string, con
     if (experience.lab.codeAnswerIndex >= experience.lab.codeOptions.length) throw new Error("El índice de respuesta del laboratorio de código no existe en las opciones.");
   }
 
-  for (const exercise of experience.exercises) {
+  for (const exercise of [...experience.inlineQuiz, ...experience.exercises]) {
     if (exercise.type === "short_answer") {
       if (exercise.options.length) throw new Error(`El ejercicio ${exercise.id} de respuesta corta no debe tener opciones.`);
       if (!exercise.correctAnswer.trim()) throw new Error(`El ejercicio ${exercise.id} necesita respuesta esperada.`);
@@ -200,7 +242,14 @@ export async function generateExperienceForConcept(moduleId: string, topicId: st
     "Usa code_prediction solo si el concepto puede aprenderse razonando sobre un fragmento pequeño de Python.",
     "Usa matching para relaciones término-definición o elemento-propiedad y sequence para procesos con orden causal o algorítmico.",
     "No fuerces un laboratorio llamativo si uno sencillo enseña mejor.",
-    "Genera entre 6 y 9 ejercicios: mínimo 2 de nivel 1, 2 de nivel 2 y 2 de nivel 3.",
+    "Genera inlineQuiz con EXACTAMENTE 6 preguntas. Es un checkpoint del contenido YA VISTO, no un examen de lo que viene después.",
+    "REGLA DE FRONTERA: cada pregunta de inlineQuiz debe poder resolverse usando únicamente ALCANCE VISIBLE Y EVALUABLE. Las unidades de fuente sirven para verificar, pero NO te autorizan a introducir términos, operadores, reglas, símbolos o propiedades que no aparezcan en ese alcance visible.",
+    "Está PROHIBIDO preguntar sobre cualquiera de los conceptos listados como FUERA DEL ALCANCE, aunque estén relacionados, aunque aparezcan en la misma página del PDF o aunque sean una continuación natural del curso.",
+    "Si una pregunta requiere conocer una palabra técnica, notación o regla que el estudiante aún no vio explícitamente en el alcance visible, descártala y crea otra.",
+    "Para inlineQuiz usa 2 preguntas de razonamiento conceptual, 2 de aplicación a escenarios nuevos y 2 de diagnóstico/comparación de errores. Debe haber al menos 2 nivel 2 y 2 nivel 3; máximo 2 nivel 1.",
+    "Los escenarios nuevos pueden cambiar el contexto, pero la habilidad evaluada debe ser exactamente la del concepto actual. Dificultad significa razonar más dentro del alcance, NO adelantar contenido.",
+    "No uses en inlineQuiz la capa PROFUNDIZAR ni APLICACIÓN EN IA como fuente de conocimientos nuevos; solo lo que ya está en resumen, Fácil, Maestría, por qué importa, prerrequisitos, errores y ejemplos visibles.",
+    "Genera entre 6 y 9 exercises para la sección Práctica: mínimo 2 de nivel 1, 2 de nivel 2 y 2 de nivel 3.",
     "Nivel 1 es guiado, pero incluso ahí exige al menos un paso real de razonamiento; no preguntes definiciones literales obvias. Nivel 2 es semiguiado y nivel 3 exige transferencia o razonamiento sin ayuda.",
     "El conjunto debe ser exigente: incluye al menos 2 ejercicios que apliquen el concepto a un caso o ejemplo nuevo y al menos 2 que obliguen a justificar, derivar o detectar un error. Evita preguntas cuya respuesta se pueda copiar literalmente del título o de una definición de una línea.",
     "Usa distractores plausibles basados en confusiones reales del concepto. Máximo 1 ejercicio de verdadero/falso salvo que el concepto lo justifique especialmente.",
@@ -211,7 +260,7 @@ export async function generateExperienceForConcept(moduleId: string, topicId: st
     "Haz que la experiencia sea adulta, técnica y útil para comprender; evita preguntas triviales de memorización si el concepto permite razonamiento.",
   ].join("\n");
 
-  const user = `${conceptBrief(context.manifest, context.topic, context.concept)}\n\nUNIDADES DE FUENTE AUTORIZADAS:\n${serializeSource(context.sourceUnits)}\n\nDiseña la experiencia completa para este concepto.`;
+  const user = `${visibleConceptScope(context.manifest, context.topic, context.concept)}\n\nCONTEXTO PEDAGÓGICO COMPLETO DEL CONCEPTO (sirve para laboratorio/práctica; inlineQuiz sigue limitado al alcance visible de arriba):\n${conceptBrief(context.manifest, context.topic, context.concept)}\n\nUNIDADES DE FUENTE AUTORIZADAS PARA VERIFICAR REFERENCIAS (NO amplían el alcance del inlineQuiz):\n${serializeSource(context.sourceUnits)}\n\nDiseña la experiencia completa para este concepto respetando estrictamente la frontera del inlineQuiz.`;
 
   try {
     const result = await requestStructuredOutput<ConceptExperience>({
@@ -296,7 +345,8 @@ export async function evaluatePracticeAnswer(moduleId: string, topicId: string, 
   if (error) throw error;
   const experience = row?.experience as ConceptExperience | undefined;
   if (!experience) throw new Error("Genera primero la experiencia de este concepto.");
-  const exercise = experience.exercises.find((item) => item.id === exerciseId);
+  const exercise = experience.inlineQuiz?.find((item) => item.id === exerciseId)
+    ?? experience.exercises.find((item) => item.id === exerciseId);
   if (!exercise) throw new Error("El ejercicio ya no existe en la experiencia guardada.");
 
   let evaluation = deterministicEvaluation(exercise, answer);

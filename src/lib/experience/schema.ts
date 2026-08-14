@@ -12,7 +12,7 @@ const sourceRef = {
 export const conceptExperienceJsonSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["schemaVersion", "topicId", "conceptId", "conceptTitle", "studyNote", "lab", "exercises"],
+  required: ["schemaVersion", "topicId", "conceptId", "conceptTitle", "studyNote", "lab", "inlineQuiz", "exercises"],
   properties: {
     schemaVersion: { type: "string", enum: ["1.0"] },
     topicId: { type: "string" },
@@ -78,6 +78,28 @@ export const conceptExperienceJsonSchema = {
         codeOptions: { type: "array", maxItems: 6, items: { type: "string" } },
         codeAnswerIndex: { anyOf: [{ type: "integer", minimum: 0, maximum: 5 }, { type: "null" }] },
         sourceRefs: { type: "array", minItems: 1, maxItems: 10, items: { $ref: "#/$defs/sourceRef" } },
+      },
+    },
+    inlineQuiz: {
+      type: "array",
+      minItems: 6,
+      maxItems: 6,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "level", "type", "prompt", "options", "correctAnswer", "acceptedAnswers", "hint", "explanation", "sourceRefs"],
+        properties: {
+          id: { type: "string" },
+          level: { type: "integer", enum: [1, 2, 3] },
+          type: { type: "string", enum: ["multiple_choice", "true_false", "short_answer", "code_prediction"] },
+          prompt: { type: "string" },
+          options: { type: "array", maxItems: 6, items: { type: "string" } },
+          correctAnswer: { type: "string" },
+          acceptedAnswers: { type: "array", maxItems: 8, items: { type: "string" } },
+          hint: { type: "string" },
+          explanation: { type: "string" },
+          sourceRefs: { type: "array", minItems: 1, maxItems: 8, items: { $ref: "#/$defs/sourceRef" } },
+        },
       },
     },
     exercises: {

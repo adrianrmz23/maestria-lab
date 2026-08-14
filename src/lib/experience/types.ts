@@ -61,6 +61,8 @@ export type ConceptExperience = {
   conceptTitle: string;
   studyNote: string;
   lab: LabSpec;
+  /** Cuestionario de exactamente 6 preguntas, limitado al alcance visible del concepto actual. */
+  inlineQuiz?: PracticeExercise[];
   exercises: PracticeExercise[];
 };
 

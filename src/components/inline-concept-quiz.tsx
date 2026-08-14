@@ -6,15 +6,9 @@ import { evaluateExercise, generateConceptExperience, getConceptExperience } fro
 import type { ConceptExperience, PracticeEvaluation, PracticeExercise } from "@/lib/experience/types";
 
 function chooseQuizExercises(experience: ConceptExperience) {
-  const byLevel = (level: number) => experience.exercises.filter((exercise) => exercise.level === level);
-  const selected: PracticeExercise[] = [];
-
-  // Primero transferencia y razonamiento semiguiado; nivel 1 solo completa la tanda.
-  for (const exercise of [...byLevel(3), ...byLevel(2), ...byLevel(1)]) {
-    if (selected.length >= 6) break;
-    if (!selected.some((item) => item.id === exercise.id)) selected.push(exercise);
-  }
-  return selected;
+  // v1.0.8: el cuestionario inline tiene su propio conjunto, generado únicamente
+  // con el alcance visible del concepto actual. No reutilizamos la práctica general.
+  return experience.inlineQuiz?.length === 6 ? experience.inlineQuiz : [];
 }
 
 function QuizQuestion({
@@ -182,7 +176,7 @@ export function InlineConceptQuiz({
 
   async function generate() {
     setBusy(true);
-    setStatus("Preparando 6 retos a partir del concepto y su fuente…");
+    setStatus("Preparando 6 retos estrictamente sobre el concepto que estás viendo…");
     try {
       await generateConceptExperience(moduleId, topicId, conceptId);
       const record = await getConceptExperience(moduleId, topicId, conceptId);
@@ -224,12 +218,12 @@ export function InlineConceptQuiz({
           <div>
             <p className="meta-font text-[9px] font-bold uppercase text-warn">Cuestionario incompleto</p>
             <h3 className="display-font mt-2 text-3xl">Necesitamos al menos 6 preguntas para que valga la pena.</h3>
-            <p className="mt-3 max-w-2xl text-[16px] leading-7 text-muted md:text-[17px]">La experiencia guardada solo contiene {exercises.length}. Regénérala una vez para crear una tanda exigente con teoría aplicada, razonamiento y transferencia.</p>
+            <p className="mt-3 max-w-2xl text-[16px] leading-7 text-muted md:text-[17px]">Este concepto conserva una experiencia de una versión anterior o un cuestionario que no pasó la validación de alcance. Actualízalo una vez para generar 6 preguntas exclusivamente sobre lo que ya viste en este concepto, sin adelantarse a temas posteriores.</p>
           </div>
         </div>
         <button type="button" onClick={generate} disabled={busy} className="focus-ring mt-5 inline-flex min-h-12 items-center gap-2 bg-accent px-5 text-sm font-bold text-white disabled:opacity-50">
           {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <RefreshCw className="size-4" aria-hidden="true" />}
-          Completar cuestionario
+          Actualizar cuestionario del concepto
         </button>
       </section>
     );
@@ -275,7 +269,7 @@ export function InlineConceptQuiz({
 
       <div className="flex justify-end border-t border-line pt-4">
         <button type="button" onClick={generate} disabled={busy} className="focus-ring inline-flex min-h-11 items-center gap-2 text-sm font-bold text-muted hover:text-accent disabled:opacity-50">
-          <RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" /> Regenerar tanda
+          <RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" /> Regenerar solo para este concepto
         </button>
       </div>
     </section>

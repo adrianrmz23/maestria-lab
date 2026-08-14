@@ -1,3 +1,8 @@
+
+## v1.0.8 — cuestionarios alineados al contenido visible
+
+El cuestionario inline de Aprende ya no reutiliza preguntas de Práctica. Cada concepto genera una tanda independiente de exactamente 6 preguntas limitada al contenido que el estudiante ya vio en ese concepto (resumen, Fácil, Maestría, errores, prerrequisitos y ejemplos). La dificultad aumenta el razonamiento sin adelantar conceptos posteriores. Los cuestionarios guardados de v1.0.7 deben actualizarse una vez desde el propio bloque de cuestionario.
+
 # Maestría Lab · Bloque 8
 
 Bloques 1–7 aprobados. Este ZIP implementa el **Bloque 8 — Tutor IA + RAG + Lector enriquecido + Conexiones + cierre de la v1** sin cambiar la identidad visual editorial/académica aprobada.
