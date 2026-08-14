@@ -49,7 +49,7 @@ export function StudyAssistantDesk({ moduleId, topicId, conceptId }: { moduleId:
   }
 
   return (
-    <section className="mt-10 border-y-2 border-ink py-6 sm:py-8">
+    <section id={`study-assistant-${conceptId}`} className="mt-10 scroll-mt-24 border-y-2 border-ink py-6 sm:py-8">
       <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
         <div>
           <div className="flex items-center gap-2 text-accent"><Sparkles className="size-4" aria-hidden="true" /><p className="meta-font text-[9px] font-bold uppercase">Mesa de estudio IA</p></div>

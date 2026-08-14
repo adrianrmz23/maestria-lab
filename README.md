@@ -230,3 +230,8 @@ Migración nueva: `010_module_audio_summaries.sql`.
 - La generación de ejercicios exige casos nuevos, justificación y distractores plausibles; evita memoria literal trivial.
 - **Profundizar** muestra por defecto una versión compacta. Los Manifests nuevos limitan esa capa a 120–180 palabras en tres microbloques; los Manifests antiguos largos se colapsan en la UI y permiten abrir el desarrollo completo bajo demanda.
 - No requiere una migración nueva de Supabase.
+
+
+## v1.0.7 — Cuestionario visible dentro del flujo de Aprende
+
+Corrección de UX: el cuestionario ya no vive como una pestaña dentro de Capas de comprensión. Ahora aparece siempre como bloque visible después de Prerrequisitos/Errores comunes y justo antes de la Mesa de estudio IA (“Profundiza sin convertirlo en una pared de texto”). Reutiliza la experiencia práctica existente, exige un mínimo visible de 6 preguntas y sus respuestas siguen alimentando Dominio.

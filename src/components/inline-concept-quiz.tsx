@@ -216,8 +216,27 @@ export function InlineConceptQuiz({
     );
   }
 
+  if (exercises.length < 6) {
+    return (
+      <section className="paper-sheet border border-line p-5 sm:p-7">
+        <div className="flex items-start gap-3">
+          <ListChecks className="mt-1 size-5 shrink-0 text-warn" aria-hidden="true" />
+          <div>
+            <p className="meta-font text-[9px] font-bold uppercase text-warn">Cuestionario incompleto</p>
+            <h3 className="display-font mt-2 text-3xl">Necesitamos al menos 6 preguntas para que valga la pena.</h3>
+            <p className="mt-3 max-w-2xl text-[16px] leading-7 text-muted md:text-[17px]">La experiencia guardada solo contiene {exercises.length}. Regénérala una vez para crear una tanda exigente con teoría aplicada, razonamiento y transferencia.</p>
+          </div>
+        </div>
+        <button type="button" onClick={generate} disabled={busy} className="focus-ring mt-5 inline-flex min-h-12 items-center gap-2 bg-accent px-5 text-sm font-bold text-white disabled:opacity-50">
+          {busy ? <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> : <RefreshCw className="size-4" aria-hidden="true" />}
+          Completar cuestionario
+        </button>
+      </section>
+    );
+  }
+
   return (
-    <section>
+    <section className="scroll-mt-24">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b-2 border-ink pb-4">
         <div>
           <p className="meta-font text-[9px] font-bold uppercase text-accent">Comprueba lo aprendido</p>
@@ -250,7 +269,7 @@ export function InlineConceptQuiz({
           <p className="meta-font text-[9px] font-bold uppercase text-moss">Tanda completada</p>
           <h4 className="display-font mt-2 text-3xl">{correct >= Math.ceil(exercises.length * 0.75) ? "Ya tienes base para profundizar." : "Conviene revisar los errores antes de bajar otra capa."}</h4>
           <p className="mt-2 max-w-2xl text-[16px] leading-7 text-muted md:text-[17px]">Resultado: {correct}/{exercises.length}. No necesitas acertar todo, pero sí poder explicar por qué te equivocaste.</p>
-          <button type="button" onClick={onContinue} className="focus-ring mt-4 inline-flex min-h-11 items-center bg-ink px-4 text-sm font-bold text-white hover:bg-accent">Continuar a Profundizar</button>
+          <button type="button" onClick={onContinue} className="focus-ring mt-4 inline-flex min-h-11 items-center bg-ink px-4 text-sm font-bold text-white hover:bg-accent">Continuar a Mesa de estudio</button>
         </div>
       )}
 

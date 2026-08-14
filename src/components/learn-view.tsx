@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BookOpen, Braces, ChevronRight, CircleAlert, FileText, Lightbulb, ListChecks, Network, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, Braces, ChevronRight, CircleAlert, FileText, Lightbulb, Network, Sparkles } from "lucide-react";
 import { useModules } from "@/components/module-provider";
 import { StudyAssistantDesk } from "@/components/study-assistant-desk";
 import { InlineConceptQuiz } from "@/components/inline-concept-quiz";
@@ -13,7 +13,6 @@ import type { LearningConcept, LearningManifest, SourceReference } from "@/lib/p
 const layers = [
   { id: "easy", label: "Explícamelo fácil", short: "Fácil", icon: Lightbulb },
   { id: "masters", label: "Nivel Maestría", short: "Maestría", icon: BookOpen },
-  { id: "quiz", label: "Cuestionario", short: "Quiz", icon: ListChecks },
   { id: "deepen", label: "Profundizar", short: "Profundizar", icon: Braces },
   { id: "applicationAI", label: "Aplicación en IA", short: "Aplicación IA", icon: Network },
 ] as const;
@@ -77,12 +76,7 @@ function ConceptReader({ concept, moduleId, topicId }: { concept: LearningConcep
             );
           })}
         </div>
-        {layer === "quiz" ? (
-          <div className="pt-5">
-            <InlineConceptQuiz moduleId={moduleId} topicId={topicId} conceptId={concept.id} onContinue={() => { setLayer("deepen"); setFullDeepen(false); }} />
-          </div>
-        ) : (
-          <div className="paper-sheet border-x border-b border-line p-5 sm:p-7 md:p-8">
+        <div className="paper-sheet border-x border-b border-line p-5 sm:p-7 md:p-8">
             <div className="flex items-center gap-2 text-accent"><ActiveIcon className="size-4" aria-hidden="true" /><span className="meta-font text-[9px] font-bold uppercase">Explicación IA · {active.label}</span></div>
             {layer === "deepen" ? (
               <>
@@ -102,7 +96,6 @@ function ConceptReader({ concept, moduleId, topicId }: { concept: LearningConcep
             )}
             <p className="mt-5 border-t border-line pt-3 text-[15px] leading-6 text-muted md:text-base">Esta capa es una reformulación pedagógica generada a partir de la fuente; no es una cita textual del documento.</p>
           </div>
-        )}
       </section>
 
       {concept.examples.length > 0 && (
@@ -123,6 +116,15 @@ function ConceptReader({ concept, moduleId, topicId }: { concept: LearningConcep
         <div className="border-t-2 border-ink pt-4"><p className="meta-font text-[9px] font-bold uppercase text-muted">Antes de esto</p><h3 className="display-font mt-1 text-2xl">Prerrequisitos</h3>{concept.prerequisites.length ? <ul className="mt-4 space-y-2 text-[16px] leading-7 text-muted md:text-[17px]">{concept.prerequisites.map((item) => <li key={item} className="flex gap-2"><span className="text-accent">—</span>{item}</li>)}</ul> : <p className="mt-4 text-[16px] leading-7 text-muted md:text-[17px]">No se detectaron prerrequisitos explícitos.</p>}</div>
         <div className="border-t-2 border-warn pt-4"><div className="flex items-center gap-2 text-warn"><CircleAlert className="size-4" aria-hidden="true" /><p className="meta-font text-[9px] font-bold uppercase">Errores comunes</p></div><h3 className="display-font mt-1 text-2xl">Dónde suele confundirse</h3>{concept.commonMistakes.length ? <ul className="mt-4 space-y-2 text-[16px] leading-7 text-muted md:text-[17px]">{concept.commonMistakes.map((item) => <li key={item} className="flex gap-2"><span className="text-warn">—</span>{item}</li>)}</ul> : <p className="mt-4 text-[16px] leading-7 text-muted md:text-[17px]">Sin errores comunes registrados.</p>}</div>
       </section>
+
+      <div className="mt-10" id={`concept-quiz-${concept.id}`}>
+        <InlineConceptQuiz
+          moduleId={moduleId}
+          topicId={topicId}
+          conceptId={concept.id}
+          onContinue={() => document.getElementById(`study-assistant-${concept.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
+        />
+      </div>
 
       <StudyAssistantDesk moduleId={moduleId} topicId={topicId} conceptId={concept.id} />
     </article>

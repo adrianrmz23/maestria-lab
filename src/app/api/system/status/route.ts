@@ -10,7 +10,7 @@ export async function GET() {
   const audioModel = process.env.ELEVENLABS_MODEL?.trim() || "eleven_flash_v2_5";
   if (!environment) {
     return NextResponse.json({
-      appVersion: "1.0.6",
+      appVersion: "1.0.7",
       pdfParser: "unpdf-serverless",
       configured: false,
       audioConfigured,
@@ -26,7 +26,7 @@ export async function GET() {
     const { error: databaseError } = await supabase.from("modules").select("id", { head: true, count: "exact" });
     if (databaseError) {
       return NextResponse.json({
-        appVersion: "1.0.6",
+        appVersion: "1.0.7",
         pdfParser: "unpdf-serverless",
         configured: true,
         audioConfigured,
@@ -42,7 +42,7 @@ export async function GET() {
 
     await ensureDocumentBucket();
     return NextResponse.json({
-      appVersion: "1.0.6",
+      appVersion: "1.0.7",
       pdfParser: "unpdf-serverless",
       configured: true,
       audioConfigured,
@@ -55,7 +55,7 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json({
-      appVersion: "1.0.6",
+      appVersion: "1.0.7",
       pdfParser: "unpdf-serverless",
       configured: true,
       audioConfigured,
