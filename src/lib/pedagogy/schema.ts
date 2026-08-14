@@ -1,0 +1,80 @@
+export const learningManifestJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "moduleTitle", "subject", "sourceDocumentName", "overview", "learningGoals", "prerequisites", "topics"],
+  properties: {
+    schemaVersion: { type: "string", enum: ["1.0"] },
+    moduleTitle: { type: "string" },
+    subject: { type: "string" },
+    sourceDocumentName: { type: "string" },
+    overview: { type: "string" },
+    learningGoals: { type: "array", items: { type: "string" }, maxItems: 10 },
+    prerequisites: { type: "array", items: { type: "string" }, maxItems: 10 },
+    topics: {
+      type: "array",
+      minItems: 1,
+      maxItems: 18,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "title", "summary", "order", "concepts", "sourceRefs"],
+        properties: {
+          id: { type: "string" },
+          title: { type: "string" },
+          summary: { type: "string" },
+          order: { type: "integer", minimum: 1 },
+          sourceRefs: { type: "array", items: { $ref: "#/$defs/sourceRef" }, maxItems: 12 },
+          concepts: {
+            type: "array",
+            minItems: 1,
+            maxItems: 10,
+            items: {
+              type: "object",
+              additionalProperties: false,
+              required: ["id", "title", "sourceSummary", "easy", "masters", "deepen", "applicationAI", "whyItMatters", "prerequisites", "commonMistakes", "examples", "sourceRefs"],
+              properties: {
+                id: { type: "string" },
+                title: { type: "string" },
+                sourceSummary: { type: "string" },
+                easy: { type: "string" },
+                masters: { type: "string" },
+                deepen: { type: "string" },
+                applicationAI: { type: "string" },
+                whyItMatters: { type: "string" },
+                prerequisites: { type: "array", items: { type: "string" }, maxItems: 8 },
+                commonMistakes: { type: "array", items: { type: "string" }, maxItems: 8 },
+                examples: {
+                  type: "array",
+                  maxItems: 5,
+                  items: {
+                    type: "object",
+                    additionalProperties: false,
+                    required: ["title", "content", "origin"],
+                    properties: {
+                      title: { type: "string" },
+                      content: { type: "string" },
+                      origin: { type: "string", enum: ["source", "generated"] },
+                    },
+                  },
+                },
+                sourceRefs: { type: "array", minItems: 1, items: { $ref: "#/$defs/sourceRef" }, maxItems: 12 },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  $defs: {
+    sourceRef: {
+      type: "object",
+      additionalProperties: false,
+      required: ["unitIndex", "pageNumber", "label"],
+      properties: {
+        unitIndex: { type: "integer", minimum: 1 },
+        pageNumber: { anyOf: [{ type: "integer", minimum: 1 }, { type: "null" }] },
+        label: { type: "string" },
+      },
+    },
+  },
+} as const;

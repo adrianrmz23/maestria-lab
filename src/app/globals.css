@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+:root {
+  --canvas: #f1eee6;
+  --surface: #fbfaf6;
+  --surface-strong: #e8e2d6;
+  --ink: #1c2528;
+  --muted: #65706d;
+  --line: #d8d1c3;
+  --line-strong: #b9b0a0;
+  --accent: #9b4a3d;
+  --accent-soft: #f3e2dc;
+  --accent-ink: #73352d;
+  --moss: #456258;
+  --moss-soft: #dfe9e4;
+  --warn: #b06a2d;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-moss: var(--moss);
+  --color-moss-soft: var(--moss-soft);
+  --color-warn: var(--warn);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--canvas); }
+body {
+  margin: 0;
+  background:
+    linear-gradient(rgba(28, 37, 40, 0.018) 1px, transparent 1px),
+    var(--canvas);
+  background-size: 100% 32px;
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent-soft); color: var(--ink); }
+a, button, input, textarea { -webkit-tap-highlight-color: transparent; }
+button, input, textarea { font: inherit; }
+button, a { cursor: pointer; }
+
+.display-font {
+  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.meta-font {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.focus-ring:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 65%, white);
+  outline-offset: 3px;
+}
+
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+.paper-sheet {
+  background: var(--surface);
+  box-shadow: 0 1px 0 rgba(28, 37, 40, 0.04), 0 14px 40px rgba(52, 43, 30, 0.045);
+}
+
+.rule-grid {
+  background-image:
+    linear-gradient(to right, rgba(28, 37, 40, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(28, 37, 40, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
