@@ -8,6 +8,8 @@ export async function GET() {
   const environment = getSupabaseEnvironment();
   if (!environment) {
     return NextResponse.json({
+      appVersion: "1.0.4",
+      pdfParser: "unpdf-serverless",
       configured: false,
       databaseReady: false,
       storageReady: false,
@@ -20,6 +22,8 @@ export async function GET() {
     const { error: databaseError } = await supabase.from("modules").select("id", { head: true, count: "exact" });
     if (databaseError) {
       return NextResponse.json({
+        appVersion: "1.0.4",
+        pdfParser: "unpdf-serverless",
         configured: true,
         databaseReady: false,
         storageReady: false,
@@ -32,6 +36,8 @@ export async function GET() {
 
     await ensureDocumentBucket();
     return NextResponse.json({
+      appVersion: "1.0.4",
+      pdfParser: "unpdf-serverless",
       configured: true,
       databaseReady: true,
       storageReady: true,
@@ -41,6 +47,8 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json({
+      appVersion: "1.0.4",
+      pdfParser: "unpdf-serverless",
       configured: true,
       databaseReady: false,
       storageReady: false,

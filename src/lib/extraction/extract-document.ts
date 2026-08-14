@@ -20,15 +20,12 @@ export type DocumentExtraction = {
   warnings: string[];
 };
 
-function normalizeInlineText(value: string) {
-  return value.replace(/[\t\u00a0]+/g, " ").replace(/ {2,}/g, " ").trim();
-}
-
 function normalizeDocumentText(value: string) {
   return value
     .replace(/\r\n/g, "\n")
     .replace(/[\t\u00a0]+/g, " ")
     .replace(/ {2,}/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -43,78 +40,32 @@ function makePreview(value: string) {
   return compact.length > 900 ? `${compact.slice(0, 900).trimEnd()}…` : compact;
 }
 
-async function loadPdfJsForNode() {
-  // pdfjs-dist 5.x espera APIs de Canvas que no son globals nativos en Node.
-  // Cargarlas explícitamente evita que el resultado dependa de la detección
-  // interna de PDF.js, que puede fallar al ejecutarse dentro de Vercel/Next.
-  const canvas = await import("@napi-rs/canvas");
-  const runtime = globalThis as unknown as {
-    DOMMatrix?: unknown;
-    ImageData?: unknown;
-    Path2D?: unknown;
-  };
-
-  runtime.DOMMatrix ??= canvas.DOMMatrix;
-  runtime.ImageData ??= canvas.ImageData;
-  runtime.Path2D ??= canvas.Path2D;
-
-  return import("pdfjs-dist/legacy/build/pdf.mjs");
-}
-
 async function extractPdf(buffer: Buffer): Promise<DocumentExtraction> {
-  const pdfjs = await loadPdfJsForNode();
-  const loadingTask = pdfjs.getDocument({
-    data: new Uint8Array(buffer),
-    useSystemFonts: true,
-  });
-
-  const pdf = await loadingTask.promise;
-  const units: ExtractionUnit[] = [];
+  // unpdf incluye un build serverless de PDF.js con el worker embebido.
+  // Para extracción de texto no necesita DOMMatrix, canvas ni binarios nativos,
+  // por lo que funciona de forma consistente en Node local y Vercel Functions.
+  const { extractText } = await import("unpdf");
+  const result = await extractText(new Uint8Array(buffer), { mergePages: false });
+  const pages = Array.isArray(result.text) ? result.text : [result.text];
   const warnings: string[] = [];
 
-  try {
-    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-      const page = await pdf.getPage(pageNumber);
-      const textContent = await page.getTextContent();
-      const lines: string[] = [];
-      let currentLine = "";
-      let lastY: number | null = null;
+  const units = pages.map((pageText, index) => {
+    const pageNumber = index + 1;
+    const content = normalizeDocumentText(pageText || "");
+    if (!content) warnings.push(`La página ${pageNumber} no contiene texto seleccionable.`);
+    return {
+      unitIndex: pageNumber,
+      pageNumber,
+      label: `Página ${pageNumber}`,
+      content,
+      charCount: content.length,
+    } satisfies ExtractionUnit;
+  });
 
-      const pushLine = () => {
-        const clean = normalizeInlineText(currentLine);
-        if (clean) lines.push(clean);
-        currentLine = "";
-      };
-
-      for (const item of textContent.items) {
-        if (!("str" in item)) continue;
-        const text = String(item.str || "").trim();
-        if (!text) continue;
-        const transform = "transform" in item && Array.isArray(item.transform) ? item.transform : undefined;
-        const y = transform && typeof transform[5] === "number" ? transform[5] : null;
-        if (lastY !== null && y !== null && Math.abs(y - lastY) > 3.5 && currentLine) pushLine();
-        currentLine += `${currentLine ? " " : ""}${text}`;
-        lastY = y;
-        if ("hasEOL" in item && item.hasEOL) pushLine();
-      }
-      pushLine();
-
-      const content = lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-
-      if (!content) warnings.push(`La página ${pageNumber} no contiene texto seleccionable.`);
-
-      units.push({
-        unitIndex: pageNumber,
-        pageNumber,
-        label: `Página ${pageNumber}`,
-        content,
-        charCount: content.length,
-      });
-
-      page.cleanup();
-    }
-  } finally {
-    await pdf.destroy();
+  // totalPages viene del parser; si por cualquier razón el array fuera menor,
+  // conservamos las unidades devueltas y dejamos constancia en warnings.
+  if (result.totalPages !== units.length) {
+    warnings.push(`El PDF reportó ${result.totalPages} páginas y se recibieron ${units.length} unidades de texto.`);
   }
 
   const fullText = units.map((unit) => unit.content).filter(Boolean).join("\n\n");
@@ -122,11 +73,11 @@ async function extractPdf(buffer: Buffer): Promise<DocumentExtraction> {
     fullText,
     previewText: makePreview(fullText),
     units,
-    pageCount: units.length,
+    pageCount: result.totalPages,
     charCount: fullText.length,
     wordCount: countWords(fullText),
-    parser: "pdfjs-dist",
-    parserVersion: "5.x",
+    parser: "unpdf-serverless",
+    parserVersion: "1.8.x",
     warnings,
   };
 }

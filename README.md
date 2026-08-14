@@ -168,7 +168,6 @@ Consulta también `PRODUCTION-CHECKLIST.md`.
 
 ## Corrección 0.8.1 — extracción PDF en Next/Turbopack
 
-`pdfjs-dist` se mantiene fuera del bundle de servidor mediante `serverExternalPackages`. Esto evita que Next/Turbopack reubique `pdf.mjs` en `.next/server/chunks` y rompa la resolución relativa de `pdf.worker.mjs` durante la extracción en Node. Después de actualizar desde 0.8.0, detén `npm run dev`, elimina `.next` y vuelve a iniciar antes de pulsar **Reintentar extracción**.
 
 
 ## v0.8.3 · Limpieza para producción
@@ -194,9 +193,9 @@ Consulta también `PRODUCTION-CHECKLIST.md`.
 - `postcss.config.mjs` sin export anónimo.
 - La regla `react-hooks/set-state-in-effect` se desactiva de forma explícita porque esta v1 usa efectos de cliente para hidratar/cargar estado remoto; se mantienen activas `rules-of-hooks` y `exhaustive-deps`.
 
-## Vercel / PDF.js
+## v1.0.4 — extractor PDF serverless
 
-La extracción PDF en producción carga explícitamente `@napi-rs/canvas` antes de
-`pdfjs-dist` para proporcionar `DOMMatrix`, `ImageData` y `Path2D` en Node.
-Ambos paquetes se mantienen en `serverExternalPackages` para que Next.js no
-reempaquete el binding nativo ni desplace los archivos internos de PDF.js.
+La extracción PDF ya no importa directamente `pdfjs-dist` ni depende de `@napi-rs/canvas`.
+Usa `unpdf` con su build serverless de PDF.js y worker embebido, evitando dependencias de
+`DOMMatrix`/canvas en Vercel Functions. Los PDFs ya almacenados no necesitan volver a subirse:
+tras desplegar esta versión usa **Reintentar extracción**.

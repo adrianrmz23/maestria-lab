@@ -6,8 +6,8 @@ import { mapDocumentRow, type DocumentRow } from "@/lib/supabase/mappers";
 function humanizeExtractionError(error: unknown) {
   const raw = error instanceof Error ? error.message : "Error desconocido durante la extracción.";
 
-  if (raw.includes("Setting up fake worker failed") || raw.includes("pdf.worker.mjs")) {
-    return "No se pudo inicializar el motor de lectura PDF. Reinicia Maestría Lab después de actualizar el proyecto y vuelve a intentar la extracción.";
+  if (/DOMMatrix|pdfjs-dist|pdf\.worker|fake worker|canvas/i.test(raw)) {
+    return "El deployment todavía está usando el extractor PDF anterior. Confirma que Vercel desplegó Maestría Lab 1.0.4 y vuelve a intentar.";
   }
 
   return raw;

@@ -6,6 +6,7 @@ import type { SourceDocumentMeta } from "@/lib/mock-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 type RouteContext = { params: Promise<{ id: string }> };
 

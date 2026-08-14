@@ -96,3 +96,10 @@ No uses prefijo `NEXT_PUBLIC_` para `SUPABASE_SECRET_KEY`, `OPENAI_API_KEY`, `KI
 - Generar una ayuda IA al final de un párrafo.
 - Preparar RAG y hacer una pregunta al Tutor.
 - Eliminar el módulo temporal y confirmar que desaparece de Biblioteca.
+
+## 5. Actualización v1.0.4 · extracción PDF en Vercel
+
+Esta versión reemplaza la extracción directa con `pdfjs-dist`/canvas por `unpdf` serverless.
+Después de reemplazar el proyecto ejecuta `npm install` para actualizar `package-lock.json`,
+sube también ese lockfile a GitHub y espera el nuevo deployment de Vercel. Los PDFs que ya
+están en Supabase Storage no deben volver a subirse: usa **Reintentar extracción**.

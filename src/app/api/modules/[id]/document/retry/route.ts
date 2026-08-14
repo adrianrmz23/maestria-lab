@@ -5,6 +5,7 @@ import { mapDocumentRow, type DocumentRow } from "@/lib/supabase/mappers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 type RouteContext = { params: Promise<{ id: string }> };
 
