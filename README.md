@@ -193,9 +193,30 @@ Consulta también `PRODUCTION-CHECKLIST.md`.
 - `postcss.config.mjs` sin export anónimo.
 - La regla `react-hooks/set-state-in-effect` se desactiva de forma explícita porque esta v1 usa efectos de cliente para hidratar/cargar estado remoto; se mantienen activas `rules-of-hooks` y `exhaustive-deps`.
 
-## v1.0.4 — extractor PDF serverless
+## v1.0.5 — extractor PDF serverless
 
 La extracción PDF ya no importa directamente `pdfjs-dist` ni depende de `@napi-rs/canvas`.
 Usa `unpdf` con su build serverless de PDF.js y worker embebido, evitando dependencias de
 `DOMMatrix`/canvas en Vercel Functions. Los PDFs ya almacenados no necesitan volver a subirse:
 tras desplegar esta versión usa **Reintentar extracción**.
+
+
+## v1.0.5 · lectura más cómoda + resumen en audio
+
+- Se aumenta la tipografía de contenido académico en móvil y desktop, con especial énfasis en Aprende, Fuente, Mesa de estudio IA y Lector.
+- Cada módulo puede generar bajo demanda un **Resumen breve** (2–3 min) y un **Resumen de estudio** (5–7 min).
+- OpenAI prepara el guion desde el Learning Manifest; ElevenLabs genera el MP3.
+- Los MP3 se guardan en el bucket privado `maestria-audio` y se reproducen mediante URLs firmadas. Reproducir no vuelve a consumir créditos.
+- `eleven_flash_v2_5` es el modelo predeterminado para equilibrar costo/calidad. `ELEVENLABS_MODEL` permite cambiarlo sin tocar código.
+- La regeneración es manual y pide confirmación porque vuelve a consumir créditos.
+- Si regeneras el Learning Manifest, el audio anterior queda marcado como desactualizado.
+
+Variables nuevas:
+
+```env
+ELEVENLABS_API_KEY=...
+ELEVENLABS_VOICE_ID=...
+ELEVENLABS_MODEL=eleven_flash_v2_5
+```
+
+Migración nueva: `010_module_audio_summaries.sql`.

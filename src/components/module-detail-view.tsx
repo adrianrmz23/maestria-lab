@@ -7,6 +7,7 @@ import { Archive, BookOpenText, BrainCircuit, ChartNoAxesColumnIncreasing, Chevr
 import { useModules } from "@/components/module-provider";
 import { DocumentPanel } from "@/components/document-panel";
 import { LearningManifestPanel } from "@/components/learning-manifest-panel";
+import { AudioSummaryPanel } from "@/components/audio-summary-panel";
 import { formatModuleUpdated, sortModulesByUpdated } from "@/lib/module-utils";
 
 const modes = [
@@ -88,6 +89,7 @@ export function ModuleDetailView() {
 
       <DocumentPanel module={studyModule} />
       <LearningManifestPanel module={studyModule} />
+      <AudioSummaryPanel moduleId={studyModule.id} />
 
       <section className="mt-8 border-b border-line">
         <p className="meta-font mb-2 text-[9px] font-bold uppercase text-muted">Modos de aprendizaje</p>

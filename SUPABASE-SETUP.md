@@ -100,3 +100,14 @@ Si configuraste Kimi, revisa las columnas `provider` y `model` de `reader_annota
 - Las ayudas IA se generan por párrafo al pulsar el CTA `Entender mejor este párrafo` y quedan cacheadas.
 - Si un documento fue extraído con v0.8.1 o anterior y aparece como texto plano, usa `Actualizar formato` una vez dentro del Lector. Esto vuelve a extraer el documento y, por seguridad, invalida ayudas/RAG antiguos.
 - Biblioteca muestra ahora `Eliminar` directamente en cada módulo. En Supabase la eliminación borra el objeto de Storage y las tablas relacionadas caen por `ON DELETE CASCADE`.
+
+
+# v1.0.5 · Resúmenes en audio
+
+Ejecuta después de 009:
+
+```text
+supabase/migrations/010_module_audio_summaries.sql
+```
+
+Crea `module_audio_summaries`. El bucket privado `maestria-audio` se crea automáticamente desde servidor cuando generas el primer MP3.

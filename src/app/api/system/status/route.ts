@@ -6,11 +6,15 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const environment = getSupabaseEnvironment();
+  const audioConfigured = Boolean(process.env.ELEVENLABS_API_KEY?.trim() && process.env.ELEVENLABS_VOICE_ID?.trim());
+  const audioModel = process.env.ELEVENLABS_MODEL?.trim() || "eleven_flash_v2_5";
   if (!environment) {
     return NextResponse.json({
-      appVersion: "1.0.4",
+      appVersion: "1.0.5",
       pdfParser: "unpdf-serverless",
       configured: false,
+      audioConfigured,
+      audioModel,
       databaseReady: false,
       storageReady: false,
       message: "Faltan variables de Supabase. La app continuará en modo local.",
@@ -22,9 +26,11 @@ export async function GET() {
     const { error: databaseError } = await supabase.from("modules").select("id", { head: true, count: "exact" });
     if (databaseError) {
       return NextResponse.json({
-        appVersion: "1.0.4",
+        appVersion: "1.0.5",
         pdfParser: "unpdf-serverless",
         configured: true,
+        audioConfigured,
+        audioModel,
         databaseReady: false,
         storageReady: false,
         supabaseUrl: environment.url,
@@ -36,9 +42,11 @@ export async function GET() {
 
     await ensureDocumentBucket();
     return NextResponse.json({
-      appVersion: "1.0.4",
+      appVersion: "1.0.5",
       pdfParser: "unpdf-serverless",
       configured: true,
+      audioConfigured,
+      audioModel,
       databaseReady: true,
       storageReady: true,
       supabaseUrl: environment.url,
@@ -47,9 +55,11 @@ export async function GET() {
     });
   } catch (error) {
     return NextResponse.json({
-      appVersion: "1.0.4",
+      appVersion: "1.0.5",
       pdfParser: "unpdf-serverless",
       configured: true,
+      audioConfigured,
+      audioModel,
       databaseReady: false,
       storageReady: false,
       supabaseUrl: environment.url,

@@ -20,9 +20,9 @@ const kindMeta = {
 } as const;
 
 function textSizeClass(textSize: TextSize) {
-  if (textSize === "compact") return "text-[17px] leading-[1.8] sm:text-[18px]";
-  if (textSize === "large") return "text-[21px] leading-[1.92] sm:text-[23px]";
-  return "text-[19px] leading-[1.88] sm:text-[20px]";
+  if (textSize === "compact") return "text-[18px] leading-[1.82] sm:text-[19px]";
+  if (textSize === "large") return "text-[23px] leading-[1.92] sm:text-[24px]";
+  return "text-[20px] leading-[1.9] sm:text-[21px]";
 }
 
 function annotationForBlock(block: ReaderBlock, annotations: ReaderAnnotation[]) {
@@ -44,11 +44,11 @@ function ReaderHelpPanel({ annotation, onClose }: { annotation: ReaderAnnotation
         </div>
         <button type="button" onClick={onClose} className="focus-ring grid size-10 shrink-0 place-items-center text-muted hover:text-accent" aria-label="Cerrar ayuda"><X className="size-4" /></button>
       </div>
-      <p className="mt-4 text-[15px] leading-7 text-ink">{annotation.explanation}</p>
+      <p className="mt-4 text-[18px] leading-8 text-ink md:text-[19px]">{annotation.explanation}</p>
       {annotation.example && (
         <div className="mt-4 border-l-2 border-moss bg-moss-soft/35 px-4 py-3">
           <p className="meta-font text-[8px] font-bold uppercase text-moss">Ejemplo para aterrizarlo</p>
-          <p className="mt-2 text-sm leading-6 text-ink">{annotation.example}</p>
+          <p className="mt-2 text-[16px] leading-7 text-ink md:text-[17px]">{annotation.example}</p>
         </div>
       )}
       <p className="meta-font mt-4 text-[8px] uppercase text-muted">Generado con {annotation.provider} · {annotation.model} · no sustituye la fuente</p>
@@ -199,7 +199,7 @@ export function DocumentReader() {
         </div>
         <p className="meta-font mt-4 text-[9px] font-bold uppercase text-accent">Lector académico · fuente original</p>
         <h1 className="display-font mt-2 max-w-4xl text-4xl leading-none sm:text-5xl">Una lectura que respeta la estructura del documento.</h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">Temas, subtemas y párrafos se separan visualmente. La fuente permanece intacta y cada ayuda IA aparece después del párrafo, solo cuando tú la pides.</p>
+        <p className="mt-3 max-w-3xl text-[16px] leading-7 text-muted md:text-[17px]">Temas, subtemas y párrafos se separan visualmente. La fuente permanece intacta y cada ayuda IA aparece después del párrafo, solo cuando tú la pides.</p>
       </header>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-[205px_minmax(0,1fr)]">
@@ -207,11 +207,11 @@ export function DocumentReader() {
           <div className="border-l-2 border-moss pl-4">
             <p className="meta-font text-[9px] font-bold uppercase text-moss">Documento</p>
             <p className="mt-2 text-sm font-bold leading-5">{studyModule.sourceDocument?.name || "Fuente del módulo"}</p>
-            <p className="mt-2 text-xs leading-5 text-muted">{unit?.pageNumber ? `Página ${unit.pageNumber}` : unit ? `Unidad ${unit.unitIndex}` : "Cargando…"}</p>
+            <p className="mt-2 text-[14px] leading-6 text-muted md:text-[15px]">{unit?.pageNumber ? `Página ${unit.pageNumber}` : unit ? `Unidad ${unit.unitIndex}` : "Cargando…"}</p>
           </div>
           <div className="mt-5 border-t border-line pt-4">
             <p className="meta-font text-[8px] font-bold uppercase text-muted">Cómo funciona</p>
-            <p className="mt-2 text-xs leading-5 text-muted">Lee primero la fuente. Al terminar cada párrafo puedes pedir una aclaración breve y un ejemplo sin abandonar la lectura.</p>
+            <p className="mt-2 text-[14px] leading-6 text-muted md:text-[15px]">Lee primero la fuente. Al terminar cada párrafo puedes pedir una aclaración breve y un ejemplo sin abandonar la lectura.</p>
           </div>
           {legacyFlatText && (
             <button type="button" onClick={rebuildReadingStructure} disabled={rebuilding} className="focus-ring mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 border border-warn px-3 text-xs font-bold text-warn hover:bg-warn hover:text-white disabled:opacity-45">
@@ -243,7 +243,7 @@ export function DocumentReader() {
 
               <div className="mx-auto mt-10 max-w-[70ch] border-t-2 border-ink pt-5">
                 <p className="meta-font text-[9px] font-bold uppercase text-moss">Fin de {unit.pageNumber ? `la página ${unit.pageNumber}` : "la unidad"}</p>
-                <p className="mt-2 text-sm leading-6 text-muted">Las ayudas IA son opcionales y están separadas de la fuente. Puedes leer todo el documento sin generar ninguna.</p>
+                <p className="mt-2 text-[16px] leading-7 text-muted md:text-[17px]">Las ayudas IA son opcionales y están separadas de la fuente. Puedes leer todo el documento sin generar ninguna.</p>
               </div>
             </article>
           ) : <div className="paper-sheet border border-line p-7"><h2 className="display-font text-3xl">No pudimos cargar esta unidad.</h2></div>}

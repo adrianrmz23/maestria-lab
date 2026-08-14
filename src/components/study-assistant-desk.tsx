@@ -54,13 +54,13 @@ export function StudyAssistantDesk({ moduleId, topicId, conceptId }: { moduleId:
         <div>
           <div className="flex items-center gap-2 text-accent"><Sparkles className="size-4" aria-hidden="true" /><p className="meta-font text-[9px] font-bold uppercase">Mesa de estudio IA</p></div>
           <h3 className="display-font mt-2 text-3xl">Profundiza sin convertirlo en una pared de texto.</h3>
-          <p className="mt-3 text-sm leading-6 text-muted">Consultas contextuales ancladas al tema y a sus unidades de fuente. No es un chat general ni modifica el Manifest.</p>
+          <p className="mt-3 text-[16px] leading-7 text-muted md:text-[17px]">Consultas contextuales ancladas al tema y a sus unidades de fuente. No es un chat general ni modifica el Manifest.</p>
         </div>
 
         <div className="min-w-0">
           <div className="flex flex-wrap gap-2">
             {actions.map(({ id, label, icon: Icon }) => (
-              <button key={id} type="button" disabled={busy} onClick={() => run(id)} className={`focus-ring inline-flex min-h-11 items-center gap-2 border px-3 text-xs font-bold transition-colors disabled:opacity-50 ${activeAction === id && result ? "border-accent bg-accent-soft/40 text-accent" : "border-line-strong text-muted hover:border-accent hover:text-accent"}`}>
+              <button key={id} type="button" disabled={busy} onClick={() => run(id)} className={`focus-ring inline-flex min-h-11 items-center gap-2 border px-3 text-[14px] font-bold transition-colors disabled:opacity-50 md:text-[15px] ${activeAction === id && result ? "border-accent bg-accent-soft/40 text-accent" : "border-line-strong text-muted hover:border-accent hover:text-accent"}`}>
                 {busy && activeAction === id ? <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" /> : <Icon className="size-3.5" aria-hidden="true" />} {label}
               </button>
             ))}
@@ -83,19 +83,19 @@ export function StudyAssistantDesk({ moduleId, topicId, conceptId }: { moduleId:
                 <span className="meta-font text-[8px] uppercase text-muted">{model || "IA"}</span>
               </div>
               <h4 className="display-font mt-5 text-2xl sm:text-3xl">{result.title}</h4>
-              <p className="mt-4 whitespace-pre-line text-[15px] leading-8 text-ink sm:text-base">{result.answer}</p>
+              <p className="mt-4 whitespace-pre-line text-[19px] leading-[1.85] text-ink md:text-[18px] md:leading-[1.8]">{result.answer}</p>
 
               {result.takeaways.length > 0 && (
                 <div className="mt-6 border-l-2 border-moss pl-4">
                   <p className="meta-font text-[9px] font-bold uppercase text-moss">Qué deberías retener</p>
-                  <ul className="mt-3 space-y-2 text-sm leading-6 text-muted">{result.takeaways.map((item) => <li key={item} className="flex gap-2"><span className="text-moss">—</span><span>{item}</span></li>)}</ul>
+                  <ul className="mt-3 space-y-2 text-[16px] leading-7 text-muted md:text-[17px]">{result.takeaways.map((item) => <li key={item} className="flex gap-2"><span className="text-moss">—</span><span>{item}</span></li>)}</ul>
                 </div>
               )}
 
               {result.code && <pre className="mt-6 overflow-x-auto border border-line bg-ink p-4 text-sm leading-6 text-white"><code>{result.code}</code></pre>}
-              {result.challenge && <div className="mt-6 border-t border-line pt-4"><p className="meta-font text-[9px] font-bold uppercase text-warn">Comprueba si lo entendiste</p><p className="mt-2 text-sm font-bold leading-6 text-ink">{result.challenge}</p></div>}
-              <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">{result.sourceRefs.length ? result.sourceRefs.map((ref) => <span key={`${ref.unitIndex}-${ref.pageNumber ?? "x"}`} className="meta-font border border-line bg-canvas px-2 py-1 text-[8px] uppercase text-muted">Fuente · {refLabel(ref)}</span>) : <span className="text-xs text-muted">La respuesta no necesitó una referencia adicional a la fuente.</span>}</div>
-              <button type="button" onClick={() => result && activeAction && run(activeAction, activeAction === "custom" ? question : undefined)} disabled={busy} className="focus-ring mt-4 inline-flex min-h-11 items-center gap-2 text-xs font-bold text-muted hover:text-accent disabled:opacity-50"><RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" /> Generar otra respuesta</button>
+              {result.challenge && <div className="mt-6 border-t border-line pt-4"><p className="meta-font text-[9px] font-bold uppercase text-warn">Comprueba si lo entendiste</p><p className="mt-2 text-[16px] font-bold leading-7 text-ink md:text-[17px]">{result.challenge}</p></div>}
+              <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">{result.sourceRefs.length ? result.sourceRefs.map((ref) => <span key={`${ref.unitIndex}-${ref.pageNumber ?? "x"}`} className="meta-font border border-line bg-canvas px-2 py-1 text-[8px] uppercase text-muted">Fuente · {refLabel(ref)}</span>) : <span className="text-[15px] leading-6 text-muted md:text-base">La respuesta no necesitó una referencia adicional a la fuente.</span>}</div>
+              <button type="button" onClick={() => result && activeAction && run(activeAction, activeAction === "custom" ? question : undefined)} disabled={busy} className="focus-ring mt-4 inline-flex min-h-11 items-center gap-2 text-[14px] font-bold text-muted hover:text-accent disabled:opacity-50 md:text-[15px]"><RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" /> Generar otra respuesta</button>
             </article>
           )}
         </div>

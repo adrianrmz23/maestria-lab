@@ -1,7 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const DOCUMENT_BUCKET = "maestria-documents";
+export const AUDIO_BUCKET = "maestria-audio";
 export const DOCUMENT_MAX_BYTES = 50 * 1024 * 1024;
+export const AUDIO_MAX_BYTES = 50 * 1024 * 1024;
 
 let adminClient: SupabaseClient | null = null;
 
@@ -61,3 +63,23 @@ export async function ensureDocumentBucket() {
   if (createError) throw createError;
   return created;
 }
+export async function ensureAudioBucket() {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage.getBucket(AUDIO_BUCKET);
+
+  if (!error && data) return data;
+
+  const message = error?.message?.toLowerCase() ?? "";
+  const missing = message.includes("not found") || message.includes("does not exist") || message.includes("404");
+  if (error && !missing) throw error;
+
+  const { data: created, error: createError } = await supabase.storage.createBucket(AUDIO_BUCKET, {
+    public: false,
+    allowedMimeTypes: ["audio/mpeg"],
+    fileSizeLimit: AUDIO_MAX_BYTES,
+  });
+
+  if (createError) throw createError;
+  return created;
+}
+
