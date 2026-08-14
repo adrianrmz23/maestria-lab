@@ -100,7 +100,7 @@ export async function generateStructuredLearningManifest(input: string): Promise
     "Los ids deben ser slugs breves y únicos dentro de su nivel.",
     "La capa easy debe ser intuitiva pero no superficial: idealmente 100-180 palabras si el concepto lo requiere.",
     "La capa masters debe desarrollar definición formal, mecanismo, matices y terminología técnica; idealmente 220-380 palabras cuando exista material suficiente.",
-    "La capa deepen debe añadir razonamiento, casos límite, relaciones matemáticas o implicaciones técnicas; idealmente 250-450 palabras cuando corresponda.",
+    "La capa deepen debe ser compacta y de alta densidad: 120-180 palabras como máximo. Organízala en exactamente tres microbloques separados por salto de línea y etiquetados Fundamento:, Matiz: y Caso límite:. No repitas Nivel Maestría ni hagas recorridos históricos extensos.",
     "La capa applicationAI debe conectar el concepto con al menos un escenario concreto de IA, Data Science o software, evitando ejemplos decorativos.",
     "Cuando haya notación, fórmulas o código relevantes, descríbelos textualmente de forma legible. No omitas profundidad solo para ser breve.",
   ].join("\n");
@@ -111,7 +111,7 @@ export async function generateStructuredLearningManifest(input: string): Promise
     developer,
     user: input,
     reasoning: "medium",
-    verbosity: "high",
+    verbosity: "medium",
   });
 
   return { manifest: result.data, model: result.model };

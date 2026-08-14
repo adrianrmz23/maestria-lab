@@ -220,3 +220,13 @@ ELEVENLABS_MODEL=eleven_flash_v2_5
 ```
 
 Migración nueva: `010_module_audio_summaries.sql`.
+
+## v1.0.6 — Cuestionario dentro de Aprende + Profundizar compacto
+
+- Añade una capa **Cuestionario** entre Nivel Maestría y Profundizar.
+- Reutiliza la experiencia práctica ya cacheada por concepto: mínimo 6 preguntas y prioridad a razonamiento/transferencia.
+- Las respuestas alimentan `practice_attempts` y, por tanto, Dominio; no crea un historial paralelo.
+- Las pistas permanecen cerradas por defecto.
+- La generación de ejercicios exige casos nuevos, justificación y distractores plausibles; evita memoria literal trivial.
+- **Profundizar** muestra por defecto una versión compacta. Los Manifests nuevos limitan esa capa a 120–180 palabras en tres microbloques; los Manifests antiguos largos se colapsan en la UI y permiten abrir el desarrollo completo bajo demanda.
+- No requiere una migración nueva de Supabase.

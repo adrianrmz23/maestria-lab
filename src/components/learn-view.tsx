@@ -3,15 +3,17 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BookOpen, Braces, ChevronRight, CircleAlert, FileText, Lightbulb, Network, Sparkles } from "lucide-react";
+import { ArrowLeft, BookOpen, Braces, ChevronRight, CircleAlert, FileText, Lightbulb, ListChecks, Network, Sparkles } from "lucide-react";
 import { useModules } from "@/components/module-provider";
 import { StudyAssistantDesk } from "@/components/study-assistant-desk";
+import { InlineConceptQuiz } from "@/components/inline-concept-quiz";
 import { getLearningManifest } from "@/lib/learning-api";
 import type { LearningConcept, LearningManifest, SourceReference } from "@/lib/pedagogy/types";
 
 const layers = [
   { id: "easy", label: "Explícamelo fácil", short: "Fácil", icon: Lightbulb },
   { id: "masters", label: "Nivel Maestría", short: "Maestría", icon: BookOpen },
+  { id: "quiz", label: "Cuestionario", short: "Quiz", icon: ListChecks },
   { id: "deepen", label: "Profundizar", short: "Profundizar", icon: Braces },
   { id: "applicationAI", label: "Aplicación en IA", short: "Aplicación IA", icon: Network },
 ] as const;
@@ -23,6 +25,17 @@ function referenceLabel(ref: SourceReference) {
   return ref.label || `unidad ${ref.unitIndex}`;
 }
 
+
+function compactDeepen(text: string, maxWords = 170) {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text;
+  const candidate = words.slice(0, maxWords).join(" ");
+  const matches = [...candidate.matchAll(/[.!?](?=\s|$)/g)];
+  const last = matches.at(-1)?.index;
+  if (last !== undefined && last > candidate.length * 0.6) return `${candidate.slice(0, last + 1)} …`;
+  return `${candidate}…`;
+}
+
 function SourceRefs({ refs }: { refs: SourceReference[] }) {
   const unique = Array.from(new Map(refs.map((ref) => [`${ref.unitIndex}-${ref.pageNumber ?? "x"}`, ref])).values());
   return <div className="flex flex-wrap gap-2">{unique.map((ref) => <span key={`${ref.unitIndex}-${ref.pageNumber ?? "x"}`} className="meta-font border border-line bg-surface px-2 py-1 text-[8px] uppercase text-muted">Fuente · {referenceLabel(ref)}</span>)}</div>;
@@ -30,7 +43,11 @@ function SourceRefs({ refs }: { refs: SourceReference[] }) {
 
 function ConceptReader({ concept, moduleId, topicId }: { concept: LearningConcept; moduleId: string; topicId: string }) {
   const [layer, setLayer] = useState<LayerId>("easy");
+  const [fullDeepen, setFullDeepen] = useState(false);
   const active = layers.find((item) => item.id === layer)!;
+  const deepenWords = concept.deepen.trim().split(/\s+/);
+  const deepenIsLong = deepenWords.length > 190;
+  const deepenPreview = deepenIsLong ? compactDeepen(concept.deepen) : concept.deepen;
   const ActiveIcon = active.icon;
 
   return (
@@ -60,11 +77,32 @@ function ConceptReader({ concept, moduleId, topicId }: { concept: LearningConcep
             );
           })}
         </div>
-        <div className="paper-sheet border-x border-b border-line p-5 sm:p-7 md:p-8">
-          <div className="flex items-center gap-2 text-accent"><ActiveIcon className="size-4" aria-hidden="true" /><span className="meta-font text-[9px] font-bold uppercase">Explicación IA · {active.label}</span></div>
-          <p className="mt-4 whitespace-pre-line text-[19px] leading-[1.85] text-ink md:text-[18px] md:leading-[1.8]">{concept[layer]}</p>
-          <p className="mt-5 border-t border-line pt-3 text-[15px] leading-6 text-muted md:text-base">Esta capa es una reformulación pedagógica generada a partir de la fuente; no es una cita textual del documento.</p>
-        </div>
+        {layer === "quiz" ? (
+          <div className="pt-5">
+            <InlineConceptQuiz moduleId={moduleId} topicId={topicId} conceptId={concept.id} onContinue={() => { setLayer("deepen"); setFullDeepen(false); }} />
+          </div>
+        ) : (
+          <div className="paper-sheet border-x border-b border-line p-5 sm:p-7 md:p-8">
+            <div className="flex items-center gap-2 text-accent"><ActiveIcon className="size-4" aria-hidden="true" /><span className="meta-font text-[9px] font-bold uppercase">Explicación IA · {active.label}</span></div>
+            {layer === "deepen" ? (
+              <>
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-b border-line pb-3">
+                  <p className="meta-font text-[8px] font-bold uppercase text-muted">Profundización esencial · lectura breve</p>
+                  <span className="meta-font text-[8px] uppercase text-muted">{Math.max(1, Math.ceil((fullDeepen ? deepenWords.length : Math.min(deepenWords.length, 170)) / 180))} min aprox.</span>
+                </div>
+                <p className="mt-4 whitespace-pre-line text-[19px] leading-[1.85] text-ink md:text-[18px] md:leading-[1.8]">{fullDeepen ? concept.deepen : deepenPreview}</p>
+                {deepenIsLong && (
+                  <button type="button" onClick={() => setFullDeepen((value) => !value)} className="focus-ring mt-5 inline-flex min-h-11 items-center border border-line-strong px-3 text-sm font-bold text-muted hover:border-accent hover:text-accent">
+                    {fullDeepen ? "Volver a versión resumida" : "Ver desarrollo completo"}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="mt-4 whitespace-pre-line text-[19px] leading-[1.85] text-ink md:text-[18px] md:leading-[1.8]">{concept[layer]}</p>
+            )}
+            <p className="mt-5 border-t border-line pt-3 text-[15px] leading-6 text-muted md:text-base">Esta capa es una reformulación pedagógica generada a partir de la fuente; no es una cita textual del documento.</p>
+          </div>
+        )}
       </section>
 
       {concept.examples.length > 0 && (
