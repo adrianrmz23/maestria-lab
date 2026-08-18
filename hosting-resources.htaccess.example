@@ -1,0 +1,23 @@
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "https://maestria-lab.vercel.app"
+    Header set Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+    Header set Access-Control-Allow-Headers "Range, Content-Type"
+    Header set Access-Control-Expose-Headers "Accept-Ranges, Content-Length, Content-Range"
+</IfModule>
+
+AddType audio/mpeg .mp3
+AddType audio/mp4 .m4a
+AddType audio/wav .wav
+AddType audio/ogg .ogg
+AddType video/mp4 .mp4
+AddType video/webm .webm
+AddType application/pdf .pdf
+
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType audio/mpeg "access plus 30 days"
+    ExpiresByType audio/mp4 "access plus 30 days"
+    ExpiresByType video/mp4 "access plus 30 days"
+    ExpiresByType video/webm "access plus 30 days"
+    ExpiresByType application/pdf "access plus 7 days"
+</IfModule>

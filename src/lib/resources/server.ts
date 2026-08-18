@@ -74,6 +74,23 @@ export function safeResourceFileName(fileName: string) {
   return `${base}${extension.slice(0, 12)}`;
 }
 
+function normalizeStoredResourceType(row: ResourceRow): ModuleResourceType {
+  // Legacy external resources may have been saved as a generic link before
+  // Maestría Lab supported in-app embeds. Recover the real media type from
+  // the URL so existing MP3/M4A/MP4/PDF/image records immediately become
+  // embeddable without forcing the user to delete and recreate them.
+  if (row.external_url && (row.resource_type === "link" || row.resource_type === "other")) {
+    try {
+      const parsed = new URL(row.external_url);
+      const inferred = inferResourceType(parsed.pathname, row.mime_type || undefined);
+      if (inferred !== "other") return inferred;
+    } catch {
+      // Keep the stored type when the external URL is malformed.
+    }
+  }
+  return row.resource_type;
+}
+
 export function mapResourceRow(row: ResourceRow): ModuleResource {
   return {
     id: row.id,
@@ -81,7 +98,7 @@ export function mapResourceRow(row: ResourceRow): ModuleResource {
     topicId: row.topic_id,
     conceptId: row.concept_id,
     title: row.title,
-    resourceType: row.resource_type,
+    resourceType: normalizeStoredResourceType(row),
     source: row.source || "Recurso externo",
     originalName: row.original_name,
     mimeType: row.mime_type,

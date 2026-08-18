@@ -2,10 +2,12 @@
 
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import {
-  BookOpen, ExternalLink, File, FileAudio, FileImage, FileText, Film, Link2, LoaderCircle,
-  Map, Music2, Pin, PinOff, Plus, Presentation, Trash2, UploadCloud, X,
+  BookOpen, File, FileAudio, FileImage, FileText, Film, Link2, LoaderCircle,
+  Map, Music2, Pin, PinOff, Play, Plus, Presentation, Trash2, UploadCloud,
 } from "lucide-react";
 import { getLearningManifest } from "@/lib/learning-api";
+import { externalResourceUsesHttp, inferExternalResourceType } from "@/lib/resources/client";
+import { isEmbeddableResource, ResourcePreviewModal } from "@/components/resources/resource-preview-modal";
 import {
   createExternalModuleResource,
   deleteModuleResource,
@@ -62,24 +64,7 @@ function scopeLabel(resource: ModuleResource, manifest: LearningManifest | null)
   return concept?.title || topic?.title || "Concepto específico";
 }
 
-function PreviewModal({ resource, url, onClose }: { resource: ModuleResource; url: string; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-[90] grid place-items-center bg-[#07111f]/60 p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.currentTarget === event.target) onClose(); }}>
-      <section className="max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[24px] border border-line bg-surface shadow-[0_30px_100px_rgba(8,29,55,.28)]">
-        <header className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
-          <div className="min-w-0"><p className="meta-font text-[9px] font-bold uppercase text-accent">{labels[resource.resourceType]} · {resource.source}</p><h3 className="mt-1 truncate text-lg font-black text-ink">{resource.title}</h3></div>
-          <button type="button" onClick={onClose} className="focus-ring grid size-10 shrink-0 place-items-center rounded-xl border border-line bg-surface text-muted"><X className="size-4" /></button>
-        </header>
-        <div className="max-h-[78vh] overflow-auto bg-surface-strong p-4 sm:p-6">
-          {resource.resourceType === "audio" && <audio src={url} controls autoPlay className="w-full" />}
-          {resource.resourceType === "video" && <video src={url} controls autoPlay className="mx-auto max-h-[70vh] max-w-full rounded-xl bg-black" />}
-          {(resource.resourceType === "image" || resource.resourceType === "map") && <img src={url} alt={resource.title} className="mx-auto max-h-[72vh] max-w-full rounded-xl object-contain" />}
-          {resource.resourceType === "pdf" && <iframe src={url} title={resource.title} className="h-[72vh] w-full rounded-xl border border-line bg-white" />}
-        </div>
-      </section>
-    </div>
-  );
-}
+
 
 export function ModuleResourceHub({ moduleId }: { moduleId: string }) {
   const [resources, setResources] = useState<ModuleResource[]>([]);
@@ -198,7 +183,7 @@ export function ModuleResourceHub({ moduleId }: { moduleId: string }) {
     setOpeningId(resource.id); setMessage("");
     try {
       const result = await getModuleResourceUrl(moduleId, resource.id);
-      if (["audio", "video", "image", "map", "pdf"].includes(resource.resourceType) && !result.external) {
+      if (isEmbeddableResource(resource)) {
         setPreview({ resource, url: result.url });
       } else {
         window.open(result.url, "_blank", "noopener,noreferrer");
@@ -208,8 +193,17 @@ export function ModuleResourceHub({ moduleId }: { moduleId: string }) {
   }
 
   const resourceTypes: Array<{ value: ModuleResourceType; label: string }> = [
-    { value: "link", label: "Enlace" }, { value: "audio", label: "Audio" }, { value: "map", label: "Mapa mental" },
-    { value: "summary", label: "Resumen" }, { value: "presentation", label: "Presentación" }, { value: "quiz", label: "Cuestionario" }, { value: "other", label: "Otro" },
+    { value: "audio", label: "Audio" },
+    { value: "video", label: "Video" },
+    { value: "pdf", label: "PDF" },
+    { value: "image", label: "Imagen" },
+    { value: "map", label: "Mapa mental" },
+    { value: "presentation", label: "Presentación" },
+    { value: "summary", label: "Resumen" },
+    { value: "quiz", label: "Cuestionario" },
+    { value: "document", label: "Documento" },
+    { value: "link", label: "Enlace externo" },
+    { value: "other", label: "Otro" },
   ];
 
   return (
@@ -240,7 +234,7 @@ export function ModuleResourceHub({ moduleId }: { moduleId: string }) {
               <p className="meta-font mt-3 text-[8px] font-bold uppercase text-muted">{labels[resource.resourceType]} · {resource.source}</p>
               <h3 className="mt-1 line-clamp-2 text-[14px] font-black leading-5 text-ink">{resource.title}</h3>
               <p className="mt-1 line-clamp-1 text-[11px] text-muted">{scopeLabel(resource, manifest)}{resource.sizeBytes ? ` · ${formatSize(resource.sizeBytes)}` : ""}</p>
-              <button type="button" onClick={() => openResource(resource)} disabled={openingId === resource.id} className="focus-ring mt-3 inline-flex min-h-9 items-center gap-1.5 text-xs font-bold text-accent disabled:opacity-45">{openingId === resource.id ? <LoaderCircle className="size-3.5 animate-spin" /> : resource.externalUrl ? <ExternalLink className="size-3.5" /> : resource.resourceType === "audio" ? <Music2 className="size-3.5" /> : <BookOpen className="size-3.5" />} {resource.resourceType === "audio" ? "Reproducir" : "Abrir"}</button>
+              <button type="button" onClick={() => openResource(resource)} disabled={openingId === resource.id} className="focus-ring mt-3 inline-flex min-h-9 items-center gap-1.5 text-xs font-bold text-accent disabled:opacity-45">{openingId === resource.id ? <LoaderCircle className="size-3.5 animate-spin" /> : resource.resourceType === "audio" || resource.resourceType === "video" ? <Play className="size-3.5" /> : <BookOpen className="size-3.5" />} {resource.resourceType === "audio" ? "Reproducir aquí" : resource.resourceType === "video" ? "Ver aquí" : isEmbeddableResource(resource) ? "Ver aquí" : "Abrir"}</button>
             </article>
           ))}
         </div>
@@ -265,11 +259,12 @@ export function ModuleResourceHub({ moduleId }: { moduleId: string }) {
           </section>
 
           <section className="border-t border-line pt-5 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
-            <p className="meta-font text-[9px] font-bold uppercase text-accent">Agregar enlace</p><h3 className="mt-1 text-lg font-black text-ink">Guarda un recurso que vive fuera</h3>
+            <p className="meta-font text-[9px] font-bold uppercase text-accent">Desde tu hosting</p><h3 className="mt-1 text-lg font-black text-ink">Inserta un recurso por URL</h3><p className="mt-1 text-xs leading-5 text-muted">Audio, video, PDF, imágenes y mapas se abrirán dentro de Maestría Lab. Usa una URL HTTPS directa al archivo.</p>
             <div className="mt-3 grid gap-3">
               <input value={linkTitle} onChange={(event) => setLinkTitle(event.target.value)} placeholder="Título del recurso" className="focus-ring min-h-10 rounded-xl border border-line bg-surface px-3 text-sm" />
-              <input value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="https://…" className="focus-ring min-h-10 rounded-xl border border-line bg-surface px-3 text-sm" />
+              <input value={linkUrl} onChange={(event) => { const value = event.target.value; setLinkUrl(value); const inferred = inferExternalResourceType(value); if (inferred && inferred !== "link") setLinkType(inferred); }} placeholder="https://tudominio.com/maestria/recurso.mp3" className="focus-ring min-h-10 rounded-xl border border-line bg-surface px-3 text-sm" />
               <select value={linkType} onChange={(event) => setLinkType(event.target.value as ModuleResourceType)} className="focus-ring min-h-10 rounded-xl border border-line bg-surface px-3 text-sm">{resourceTypes.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select>
+              {externalResourceUsesHttp(linkUrl) && <p className="rounded-xl bg-[#fff5ec] px-3 py-2 text-xs font-semibold leading-5 text-warn">Tu web está en HTTPS. Una URL HTTP puede ser bloqueada por el navegador; usa HTTPS en tu hosting.</p>}
               <button type="button" onClick={addLink} disabled={linkBusy || !linkUrl.trim()} className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line bg-surface px-4 text-sm font-bold text-ink disabled:opacity-45">{linkBusy ? <LoaderCircle className="size-4 animate-spin" /> : <Link2 className="size-4 text-accent" />} Guardar enlace</button>
             </div>
           </section>
@@ -279,7 +274,7 @@ export function ModuleResourceHub({ moduleId }: { moduleId: string }) {
       )}
 
       {message && <p role="status" className={`mt-3 rounded-xl px-3 py-2 text-xs font-semibold ${/falta ejecutar|fallaron|no se pudo|requieren/i.test(message) ? "bg-[#fff5ec] text-warn" : "bg-moss-soft text-moss"}`}>{message}</p>}
-      {preview && <PreviewModal resource={preview.resource} url={preview.url} onClose={() => setPreview(null)} />}
+      {preview && <ResourcePreviewModal resource={preview.resource} url={preview.url} onClose={() => setPreview(null)} />}
     </section>
   );
 }

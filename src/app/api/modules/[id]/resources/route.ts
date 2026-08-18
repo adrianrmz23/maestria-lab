@@ -51,13 +51,19 @@ export async function POST(request: Request, context: RouteContext) {
     if (!moduleRow) return NextResponse.json({ error: "El módulo no existe." }, { status: 404 });
 
     const now = new Date().toISOString();
-    const resourceType: ModuleResourceType = input.resourceType || inferResourceType(parsed.pathname || "recurso");
+    const inferredType = inferResourceType(parsed.pathname || "recurso");
+    const requestedType = input.resourceType;
+    const resourceType: ModuleResourceType = requestedType && requestedType !== "link"
+      ? requestedType
+      : inferredType === "other" ? "link" : inferredType;
+    const pathName = decodeURIComponent(parsed.pathname.split("/").filter(Boolean).pop() || "");
+    const inferredTitle = pathName ? pathName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ") : parsed.hostname;
     const { data, error } = await supabase.from("module_resources").insert({
       module_id: id,
       topic_id: input.topicId || null,
       concept_id: input.conceptId || null,
-      title: input.title?.trim() || parsed.hostname,
-      resource_type: resourceType === "other" ? "link" : resourceType,
+      title: input.title?.trim() || inferredTitle || parsed.hostname,
+      resource_type: resourceType,
       source: input.source?.trim() || "Enlace externo",
       external_url: externalUrl,
       pinned: Boolean(input.pinned),
