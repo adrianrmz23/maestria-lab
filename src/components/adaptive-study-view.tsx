@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ArrowLeft, BookOpen, BrainCircuit, CheckCircle2, Clock3, FlaskConical, ListChecks, LoaderCircle, Play, RotateCcw, TestTubeDiagonal } from "lucide-react";
 import { useModules } from "@/components/module-provider";
-import { createStudySession, setStudySessionStatus } from "@/lib/mastery-api";
+import { createStudySession, getStudySession, setStudySessionStatus } from "@/lib/mastery-api";
 import type { StudyDuration, StudyPlanStep, StudySessionRecord } from "@/lib/mastery/types";
 
-const durations: StudyDuration[] = [5, 10, 15, 30, 45];
+const durations: StudyDuration[] = [10, 20, 40];
 
 function stepIcon(kind: StudyPlanStep["kind"]) {
   if (kind === "learn") return BookOpen;
@@ -29,12 +29,22 @@ function stepHref(slug: string, step: StudyPlanStep) {
 
 export function AdaptiveStudyView() {
   const params = useParams<{ slug: string }>();
+  const searchParams = useSearchParams();
   const { modules, hydrated } = useModules();
   const studyModule = modules.find((item) => item.slug === params.slug);
-  const [duration, setDuration] = useState<StudyDuration>(15);
+  const [duration, setDuration] = useState<StudyDuration>(20);
   const [session, setSession] = useState<StudySessionRecord | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const sessionId = searchParams.get("sessionId");
+    if (!studyModule || !sessionId || session?.id === sessionId) return;
+    let cancelled = false;
+    setBusy(true);
+    getStudySession(studyModule.id, sessionId).then((result) => { if (!cancelled) { setSession(result); setDuration(result.durationMinutes); setMessage(""); } }).catch((error) => { if (!cancelled) setMessage(error instanceof Error ? error.message : "No se pudo cargar la sesión."); }).finally(() => { if (!cancelled) setBusy(false); });
+    return () => { cancelled = true; };
+  }, [searchParams, studyModule, session?.id]);
 
   async function generate() {
     if (!studyModule) return;

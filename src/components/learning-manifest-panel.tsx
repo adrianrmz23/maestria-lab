@@ -1,13 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { ArrowRight, BookOpenCheck, BrainCircuit, RefreshCw, Sparkles, TriangleAlert } from "lucide-react";
+import { BookOpenCheck, BrainCircuit, RefreshCw, Sparkles, TriangleAlert } from "lucide-react";
 import { generateLearningManifest, getLearningManifest } from "@/lib/learning-api";
 import type { LearningManifestRecord } from "@/lib/pedagogy/types";
 import type { StudyModule } from "@/lib/mock-data";
 
-export function LearningManifestPanel({ module }: { module: StudyModule }) {
+export function LearningManifestPanel({ module, onGenerated }: { module: StudyModule; onGenerated?: () => void }) {
   const [record, setRecord] = useState<LearningManifestRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -33,7 +32,8 @@ export function LearningManifestPanel({ module }: { module: StudyModule }) {
     try {
       await generateLearningManifest(module.id);
       await refresh();
-      setMessage("Learning Manifest generado. El modo Aprende ya está disponible.");
+      onGenerated?.();
+      setMessage("Learning Manifest generado. La mesa de estudio ya está disponible arriba.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "No se pudo generar el Learning Manifest.");
       await refresh();
@@ -78,10 +78,7 @@ export function LearningManifestPanel({ module }: { module: StudyModule }) {
           </div>
           <div className="flex flex-wrap gap-2">
             {ready ? (
-              <>
-                <Link href={`/modulos/${module.slug}/aprende`} className="focus-ring inline-flex min-h-11 items-center gap-2 bg-ink px-4 text-xs font-bold text-white hover:bg-accent">Abrir Aprende <ArrowRight className="size-3.5" aria-hidden="true" /></Link>
-                <button type="button" onClick={generate} disabled={busy} className="focus-ring inline-flex min-h-11 items-center gap-2 border border-line-strong px-4 text-xs font-bold text-muted hover:border-accent hover:text-accent disabled:opacity-50"><RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" /> Regenerar</button>
-              </>
+              <button type="button" onClick={generate} disabled={busy} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-line-strong px-4 text-xs font-bold text-muted hover:border-accent hover:text-accent disabled:opacity-50"><RefreshCw className={`size-3.5 ${busy ? "animate-spin" : ""}`} aria-hidden="true" /> Regenerar ruta</button>
             ) : (
               <button type="button" onClick={generate} disabled={!sourceReady || busy || loading} className="focus-ring inline-flex min-h-11 items-center gap-2 bg-accent px-4 text-xs font-bold text-white hover:bg-accent-ink disabled:cursor-not-allowed disabled:opacity-45">
                 {busy ? <RefreshCw className="size-3.5 animate-spin" aria-hidden="true" /> : <Sparkles className="size-3.5" aria-hidden="true" />}

@@ -111,3 +111,11 @@ supabase/migrations/010_module_audio_summaries.sql
 ```
 
 Crea `module_audio_summaries`. El bucket privado `maestria-audio` se crea automáticamente desde servidor cuando generas el primer MP3.
+
+## Bloque 12 · Academic Task Studio
+
+Después de la migración 012 ejecuta también:
+
+`supabase/migrations/013_academic_task_studio.sql`
+
+Esta migración agrega tareas académicas, historial de versiones y fuentes adicionales por tarea.

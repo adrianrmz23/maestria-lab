@@ -514,11 +514,24 @@ function planTemplate(duration: StudyDuration): Array<{ kind: StudyPlanStep["kin
     { kind: "practice", minutes: 5, title: "Transfiere", instruction: "Resuelve preguntas semiguiadas o de transferencia." },
     { kind: "recall", minutes: 2, title: "Cierre activo", instruction: "Resume en tres frases qué cambió en tu comprensión." },
   ];
+  if (duration === 20) return [
+    { kind: "recall", minutes: 3, title: "Recuperación activa", instruction: "Explica sin mirar un concepto cuyo repaso esté vencido o tenga poca retención." },
+    { kind: "learn", minutes: 6, title: "Siguiente mejor concepto", instruction: "Trabaja el concepto que más valor aporta ahora, sin recorrer contenido ya sólido." },
+    { kind: "lab", minutes: 6, title: "Experimenta", instruction: "Manipula el laboratorio y predice el resultado antes de comprobarlo." },
+    { kind: "practice", minutes: 5, title: "Demuestra", instruction: "Cierra con práctica de aplicación y feedback inmediato." },
+  ];
   if (duration === 30) return [
     { kind: "learn", minutes: 6, title: "Revisión selectiva", instruction: "Trabaja únicamente las ideas que el dominio marca como débiles o sin evidencia." },
     { kind: "lab", minutes: 8, title: "Laboratorio focal", instruction: "Experimenta con dos conceptos y explica cada resultado antes de cambiar controles." },
     { kind: "practice", minutes: 10, title: "Práctica de transferencia", instruction: "Prioriza nivel 2 y 3; evita releer mientras respondes." },
     { kind: "exam", minutes: 6, title: "Cierre diagnóstico", instruction: "Termina con un examen rápido para generar evidencia independiente." },
+  ];
+  if (duration === 40) return [
+    { kind: "recall", minutes: 5, title: "Recupera antes de releer", instruction: "Haz active recall de dos conceptos vencidos o débiles." },
+    { kind: "learn", minutes: 10, title: "Aprendizaje focal", instruction: "Estudia el siguiente mejor concepto en sus capas fácil y maestría." },
+    { kind: "lab", minutes: 10, title: "Laboratorio", instruction: "Experimenta con casos normales y límites, prediciendo antes de comprobar." },
+    { kind: "practice", minutes: 10, title: "Aplicación", instruction: "Resuelve preguntas de transferencia o un desafío de código cuando corresponda." },
+    { kind: "exam", minutes: 5, title: "Checkpoint", instruction: "Termina con una evaluación breve sin pistas para medir lo que quedó." },
   ];
   return [
     { kind: "learn", minutes: 8, title: "Reconstruye fundamentos", instruction: "Revisa los conceptos prioritarios desde la fuente y señala qué no podías explicar antes." },
@@ -532,8 +545,19 @@ function planTemplate(duration: StudyDuration): Array<{ kind: StudyPlanStep["kin
 export async function createAdaptiveStudySession(moduleId: string, durationMinutes: StudyDuration): Promise<StudySessionRecord> {
   const { supabase } = await loadManifest(moduleId);
   const mastery = await calculateAndPersistMastery(moduleId);
-  const focusCount: Record<StudyDuration, number> = { 5: 1, 10: 1, 15: 2, 30: 3, 45: 4 };
+  const { data: reviewRows } = await supabase.from("concept_reviews").select("topic_id,concept_id,retention_score,due_at").eq("module_id", moduleId);
+  const reviewMap = new Map<string, { retentionScore: number; dueAt: string }>((reviewRows ?? []).map((row: Record<string, unknown>) => [String(`${row.topic_id}::${row.concept_id}`), { retentionScore: Number(row.retention_score), dueAt: String(row.due_at) }]));
+  const now = Date.now();
+  const focusCount: Record<StudyDuration, number> = { 5: 1, 10: 1, 15: 2, 20: 2, 30: 3, 40: 4, 45: 4 };
   const prioritized = [...mastery.concepts].sort((a, b) => {
+    const reviewA = reviewMap.get(`${a.topicId}::${a.conceptId}`);
+    const reviewB = reviewMap.get(`${b.topicId}::${b.conceptId}`);
+    const dueA = reviewA && new Date(reviewA.dueAt).getTime() <= now ? 0 : 1;
+    const dueB = reviewB && new Date(reviewB.dueAt).getTime() <= now ? 0 : 1;
+    if (dueA !== dueB) return dueA - dueB;
+    const retentionA = reviewA?.retentionScore ?? 50;
+    const retentionB = reviewB?.retentionScore ?? 50;
+    if (retentionA !== retentionB) return retentionA - retentionB;
     const priorityA = a.evidenceCount ? a.score : 45;
     const priorityB = b.evidenceCount ? b.score : 45;
     return priorityA - priorityB;
@@ -547,7 +571,13 @@ export async function createAdaptiveStudySession(moduleId: string, durationMinut
     conceptTitle: concept.conceptTitle,
     masteryScore: concept.score,
     status: concept.status,
-    reason: concept.evidenceCount === 0 ? "Todavía no existe evidencia suficiente sobre este concepto." : concept.weakestMisconception ? `Confusión detectada: ${concept.weakestMisconception}` : `Es uno de los conceptos con menor dominio actual (${concept.score}%).`,
+    reason: (() => {
+      const review = reviewMap.get(`${concept.topicId}::${concept.conceptId}`);
+      if (review && new Date(review.dueAt).getTime() <= now) return `Repaso espaciado vencido · retención ${review.retentionScore}%.`;
+      if (concept.evidenceCount === 0) return "Todavía no existe evidencia suficiente sobre este concepto.";
+      if (concept.weakestMisconception) return `Confusión detectada: ${concept.weakestMisconception}`;
+      return `Es uno de los conceptos con menor dominio actual (${concept.score}%).`;
+    })(),
   }));
 
   const template = planTemplate(durationMinutes);
@@ -574,8 +604,8 @@ export async function createAdaptiveStudySession(moduleId: string, durationMinut
     steps,
   };
 
-  const now = new Date().toISOString();
-  const { data, error } = await supabase.from("study_sessions").insert({ module_id: moduleId, duration_minutes: durationMinutes, status: "planned", plan, created_at: now, updated_at: now }).select("*").single();
+  const createdAt = new Date().toISOString();
+  const { data, error } = await supabase.from("study_sessions").insert({ module_id: moduleId, duration_minutes: durationMinutes, status: "planned", plan, created_at: createdAt, updated_at: createdAt }).select("*").single();
   if (error || !data) throw error ?? new Error("No se pudo guardar la sesión adaptativa.");
   return { id: String(data.id), moduleId, durationMinutes, status: "planned", plan, createdAt: String(data.created_at) };
 }

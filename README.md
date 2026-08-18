@@ -240,3 +240,13 @@ Migración nueva: `010_module_audio_summaries.sql`.
 ## v1.0.7 — Cuestionario visible dentro del flujo de Aprende
 
 Corrección de UX: el cuestionario ya no vive como una pestaña dentro de Capas de comprensión. Ahora aparece siempre como bloque visible después de Prerrequisitos/Errores comunes y justo antes de la Mesa de estudio IA (“Profundiza sin convertirlo en una pared de texto”). Reutiliza la experiencia práctica existente, exige un mínimo visible de 6 preguntas y sus respuestas siguen alimentando Dominio.
+
+### Bloque 9 — Interactive Learning Workspace
+
+La ruta principal de cada módulo ahora abre una Mesa de estudio unificada. `StudyWorkspace` integra el Learning Manifest, la experiencia interactiva, práctica rápida, ejemplos reales, apoyo contextual y referencias de fuente en una sola pantalla. Las rutas antiguas de Aprende/Laboratorio/Práctica se conservan por compatibilidad, pero la navegación principal ya no obliga al estudiante a cambiar de modo para continuar.
+
+## Academic Task Studio · Bloque 12
+
+Cada módulo incluye ahora una sección **Tareas** para interpretar consignas, generar borradores con OpenAI/Kimi/DeepSeek, crear mapas conceptuales y cuadros sinópticos editables, revisar contra rúbricas, conservar versiones y exportar resultados. Requiere la migración `013_academic_task_studio.sql`.
+
+**Tareas desde captura:** en Bloque 12 puedes adjuntar PNG/JPG/WEBP con una consigna o rúbrica. Con `OPENAI_API_KEY`, Academic Task Studio interpreta la imagen y la incorpora como fuente de la tarea.

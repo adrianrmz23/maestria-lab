@@ -24,9 +24,9 @@ La interfaz debe sentirse como un espacio personal de estudio para una maestría
 - Navegación principal horizontal en desktop; evitar sidebar global fija.
 - Jerarquía editorial con serif en títulos y sans serif en interfaz/contenido.
 - Metadatos pequeños en monoespaciada para reforzar sensación de índice/laboratorio.
-- Usar líneas, índices, fichas y márgenes antes que colecciones de tarjetas redondeadas.
-- Radio mínimo o inexistente en superficies estructurales.
-- Evitar gradientes de IA, glassmorphism, glow, neón y tarjetas KPI.
+- Usar líneas e índices en gestión, y superficies redondeadas de 20–32 px dentro de la Mesa de estudio cuando ayuden a agrupar una interacción completa.
+- El radio es funcional: agrupa concepto, laboratorio, reto y apoyos; evitar colecciones de tarjetas KPI sin propósito.
+- Se permiten fondos tonales o gradientes muy suaves dentro de superficies pedagógicas; evitar glassmorphism, glow, neón y estética de generador de IA.
 - Evitar el patrón visual usado en Nexus AI Office / Ecos de Fe: sidebar oscura + tarjetas redondeadas + menta.
 
 ## Paleta
@@ -40,6 +40,9 @@ La interfaz debe sentirse como un espacio personal de estudio para una maestría
 - Accent soft: `#F3E2DC`
 - Moss: `#456258`
 - Moss soft: `#DFE9E4`
+- Signal / azul académico: `#315F7D`
+- Signal soft: `#E3EEF4`
+- Violet / conexión conceptual: `#61527B`
 
 El color no debe ser la única señal de estado.
 
@@ -53,10 +56,10 @@ Cuerpo mínimo móvil: 16 px cuando se trata de lectura/formularios. Metadatos p
 
 ## Layout
 
-- Contenedor principal: aproximadamente 1120–1180 px.
+- Contenedor principal general: aproximadamente 1120–1240 px; la Mesa de estudio puede crecer hasta ~1480 px para sostener sus tres zonas simultáneas.
 - Desktop: navegación superior persistente.
 - Mobile: barra inferior de máximo 4 destinos principales.
-- Separación por reglas horizontales y columnas, no por tarjetas flotantes repetitivas.
+- Separación editorial en gestión; en la Mesa de estudio usar tres zonas estables y superficies pedagógicas claramente agrupadas.
 - Sin overflow horizontal a 375 px.
 
 ## Componentes
@@ -79,11 +82,12 @@ Formato de registro/ledger:
 - foco de refuerzo separado.
 
 ### Módulo
-Formato de syllabus:
-- encabezado editorial;
-- tabs lineales;
-- índice numerado;
-- ficha de estudio contextual.
+Formato de mesa de estudio:
+- encabezado editorial compacto;
+- recorrido conceptual siempre visible;
+- centro con explicación + interacción + práctica;
+- apoyo lateral con mundo real + Tutor + fuente;
+- configuración separada del flujo cotidiano, sin tabs de modos de aprendizaje.
 
 ## Interacción
 
@@ -155,3 +159,15 @@ El Lector es una excepción deliberada al patrón de densidad de las pantallas d
 - las explicaciones nunca sustituyen, reescriben ni silencian el texto fuente.
 
 Este patrón debe reutilizarse en futuros lectores, referencias y modos de estudio extensivo.
+
+## Bloque 9 — Mesa de estudio unificada
+
+La experiencia principal deja de dividir el aprendizaje en páginas separadas de Aprende, Laboratorio, Práctica y Tutor. El concepto actual es el centro de una única mesa de estudio: recorrido a la izquierda, explicación + interactivo + reto en el centro y mundo real + Tutor + fuente a la derecha. En móvil, el mismo contenido se apila y se acompaña de accesos rápidos a Recorrido, Tutor y Fuente.
+
+Principios nuevos:
+- Las herramientas pedagógicas aparecen junto al concepto, no detrás de navegación adicional.
+- La teoría esencial siempre está visible; solo la profundización larga es opcional.
+- El laboratorio y la práctica forman parte del flujo de lectura.
+- El Tutor conserva contexto del concepto actual.
+- Los ejemplos del mundo real y la fuente original permanecen visibles como apoyo.
+- La configuración administrativa queda separada del flujo cotidiano de estudio.

@@ -1,6 +1,6 @@
 import type { SourceReference } from "@/lib/pedagogy/types";
 
-export type LabType = "logic_switch" | "truth_table" | "matching" | "sequence" | "code_prediction";
+export type LabType = "logic_switch" | "truth_table" | "matching" | "sequence" | "code_prediction" | "probability_simulator" | "statistics_outlier" | "ml_threshold" | "vector_transform";
 export type LogicOperator = "and" | "or" | "implies" | "xor" | "not";
 export type PracticeLevel = 1 | 2 | 3;
 export type PracticeExerciseType = "multiple_choice" | "true_false" | "short_answer" | "code_prediction";
@@ -9,6 +9,15 @@ export type LabProposition = {
   id: string;
   label: string;
   description: string;
+};
+
+export type LabParameter = {
+  id: string;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  defaultValue: number;
 };
 
 export type MatchingPair = {
@@ -38,6 +47,11 @@ export type LabSpec = {
   codeQuestion: string | null;
   codeOptions: string[];
   codeAnswerIndex: number | null;
+  parameters: LabParameter[];
+  dataset: number[];
+  binaryLabels: number[];
+  matrix: number[];
+  vector: number[];
   sourceRefs: SourceReference[];
 };
 
@@ -84,7 +98,7 @@ export type PracticeEvaluation = {
   sourceRefs: SourceReference[];
 };
 
-export type StudyAssistantAction = "deeper" | "example" | "python" | "question" | "connection" | "custom";
+export type StudyAssistantAction = "simple" | "analogy" | "visual" | "deeper" | "example" | "python" | "question" | "connection" | "custom";
 
 export type StudyAssistantResult = {
   title: string;

@@ -1,5 +1,5 @@
 import { audioSummaryScriptSchema } from "@/lib/audio/schema";
-import type { AudioSummaryKind, AudioSummaryRecord, AudioSummaryResponse } from "@/lib/audio/types";
+import type { AudioSummaryKind, AudioSummaryRecord, AudioSummaryResponse, ConceptAudioKind, ConceptAudioRecord, ConceptAudioResponse } from "@/lib/audio/types";
 import { requestStructuredOutput } from "@/lib/openai/responses";
 import type { LearningManifest } from "@/lib/pedagogy/types";
 import { AUDIO_BUCKET, ensureAudioBucket, getSupabaseAdmin } from "@/lib/supabase/admin";
@@ -285,6 +285,230 @@ export async function generateModuleAudioSummary(moduleId: string, kind: AudioSu
       generation_error: message,
       updated_at: new Date().toISOString(),
     }, { onConflict: "module_id,kind" });
+    throw new Error(message);
+  }
+}
+
+
+
+type ConceptAudioRow = {
+  module_id: string;
+  topic_id: string;
+  concept_id: string;
+  kind: ConceptAudioKind;
+  status: "generating" | "ready" | "error";
+  title: string | null;
+  script_text: string | null;
+  script_char_count: number | null;
+  estimated_seconds: number | null;
+  estimated_credits: number | null;
+  provider: string | null;
+  model: string | null;
+  voice_id: string | null;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  manifest_generated_at: string | null;
+  generated_at: string | null;
+  generation_error: string | null;
+};
+
+function formatConceptForAudio(manifest: LearningManifest, topicId: string, conceptId: string) {
+  const topic = manifest.topics.find((item) => item.id === topicId);
+  const concept = topic?.concepts.find((item) => item.id === conceptId);
+  if (!topic || !concept) throw new Error("No se encontró el concepto solicitado dentro del Learning Manifest.");
+  return {
+    topic,
+    concept,
+    content: [
+      `MÓDULO: ${manifest.moduleTitle}`,
+      `MATERIA: ${manifest.subject}`,
+      `TEMA: ${topic.title}`,
+      `CONCEPTO: ${concept.title}`,
+      `RESUMEN DE FUENTE: ${concept.sourceSummary}`,
+      `EXPLICACIÓN SIMPLE: ${concept.easy}`,
+      `POR QUÉ IMPORTA: ${concept.whyItMatters}`,
+      `APLICACIÓN EN IA: ${concept.applicationAI}`,
+      `NIVEL MAESTRÍA: ${concept.masters}`,
+      `PROFUNDIZACIÓN: ${concept.deepen}`,
+      `PRERREQUISITOS: ${concept.prerequisites.join('; ') || 'ninguno'}`,
+      `ERRORES FRECUENTES: ${concept.commonMistakes.join('; ') || 'ninguno'}`,
+      `EJEMPLOS: ${concept.examples.map((example) => `${example.title}: ${example.content}`).join(' | ') || 'sin ejemplos explícitos'}`,
+    ].join("\n"),
+  };
+}
+
+async function generateConceptScript(manifest: LearningManifest, topicId: string, conceptId: string, kind: ConceptAudioKind) {
+  const { topic, concept, content } = formatConceptForAudio(manifest, topicId, conceptId);
+  const developer = [
+    "Eres el editor de audio educativo de Maestría Lab.",
+    "Tu misión es crear un audio breve y realmente útil SOLO para el concepto actual, no para el módulo completo.",
+    "Habla en español mexicano neutro, claro y directo.",
+    "El audio debe sentirse como una microlección guiada de la lección actual.",
+    "Estructura mental obligatoria: 1) qué es, 2) por qué importa, 3) cómo entenderlo, 4) ejemplo concreto, 5) error común, 6) mini comprobación final.",
+    "No menciones la interfaz, botones, páginas ni el documento completo.",
+    "No uses Markdown, listas ni símbolos difíciles de narrar. Si aparecen símbolos, verbalízalos de forma natural.",
+    "Sé específico con el concepto actual. Si necesitas conectar con otro tema, hazlo solo para aclarar la lección actual.",
+    "Longitud objetivo: entre 260 y 420 palabras; duración aproximada entre 2 y 4 minutos.",
+    `El campo script no puede superar ${MAX_TTS_CHARS} caracteres.`,
+  ].join("\n");
+
+  const result = await requestStructuredOutput<AudioScript>({
+    name: `concept_audio_${kind}`,
+    schema: audioSummaryScriptSchema,
+    developer,
+    user: content,
+    reasoning: "low",
+    verbosity: "medium",
+  });
+
+  const script = result.data.script.trim();
+  if (!script) throw new Error("La IA no generó un guion para esta lección.");
+  if (script.length > MAX_TTS_CHARS) {
+    throw new Error(`El guion generado excedió ${MAX_TTS_CHARS.toLocaleString("es-MX")} caracteres. Vuelve a intentarlo.`);
+  }
+
+  const title = result.data.title?.trim() || `Audio · ${topic.title} · ${concept.title}`;
+  return { title, script, topicsCovered: result.data.topicsCovered, openAIModel: result.model };
+}
+
+async function conceptRowToRecord(row: ConceptAudioRow, manifestGeneratedAt: string | null): Promise<ConceptAudioRecord> {
+  const supabase = getSupabaseAdmin();
+  let audioUrl: string | undefined;
+  if (row.status === "ready" && row.storage_bucket && row.storage_path) {
+    const { data, error } = await supabase.storage.from(row.storage_bucket).createSignedUrl(row.storage_path, SIGNED_URL_SECONDS);
+    if (!error) audioUrl = data?.signedUrl;
+  }
+  const stale = Boolean(
+    manifestGeneratedAt && row.manifest_generated_at &&
+    new Date(manifestGeneratedAt).getTime() > new Date(row.manifest_generated_at).getTime()
+  );
+  return {
+    topicId: row.topic_id,
+    conceptId: row.concept_id,
+    kind: row.kind,
+    status: row.status,
+    title: row.title || "Audio de la lección",
+    script: row.script_text || "",
+    scriptCharCount: Number(row.script_char_count || 0),
+    estimatedSeconds: Number(row.estimated_seconds || 0),
+    estimatedCredits: Number(row.estimated_credits || 0),
+    provider: row.provider || "elevenlabs",
+    model: row.model || getElevenLabsEnvironment().model,
+    voiceId: row.voice_id || "",
+    generatedAt: row.generated_at || undefined,
+    manifestGeneratedAt: row.manifest_generated_at || undefined,
+    stale,
+    error: row.generation_error || undefined,
+    audioUrl,
+  };
+}
+
+export async function getConceptAudioSummary(moduleId: string, topicId: string, conceptId: string): Promise<ConceptAudioResponse> {
+  const supabase = getSupabaseAdmin();
+  const env = getElevenLabsEnvironment();
+  const { data: manifestRow } = await supabase.from("learning_manifests").select("status,generated_at").eq("module_id", moduleId).maybeSingle();
+  const { data, error } = await supabase.from("concept_audio_summaries").select("*").eq("module_id", moduleId).eq("topic_id", topicId).eq("concept_id", conceptId).maybeSingle();
+  if (error && error.code !== "PGRST116") {
+    if (error.code === "42P01" || error.code === "PGRST205") {
+      throw new Error("Falta ejecutar la migración 012_concept_audio_summaries.sql en Supabase.");
+    }
+    throw error;
+  }
+  return {
+    configured: env.configured,
+    voiceConfigured: env.voiceConfigured,
+    model: env.model,
+    manifestReady: manifestRow?.status === "ready",
+    summary: data ? await conceptRowToRecord(data as ConceptAudioRow, manifestRow?.generated_at || null) : null,
+  };
+}
+
+export async function generateConceptAudioSummary(moduleId: string, topicId: string, conceptId: string, kind: ConceptAudioKind = "lesson", force = false) {
+  const supabase = getSupabaseAdmin();
+  const env = getElevenLabsEnvironment();
+  if (!env.configured) throw new Error("Falta ELEVENLABS_API_KEY en Vercel/.env.local.");
+  if (!env.voiceConfigured) throw new Error("Falta ELEVENLABS_VOICE_ID en Vercel/.env.local.");
+  await ensureAudioBucket();
+
+  const { data: existing, error: existingError } = await supabase.from("concept_audio_summaries").select("*").eq("module_id", moduleId).eq("topic_id", topicId).eq("concept_id", conceptId).eq("kind", kind).maybeSingle();
+  if (existingError && existingError.code !== "PGRST116") {
+    if (existingError.code === "42P01" || existingError.code === "PGRST205") throw new Error("Falta ejecutar la migración 012_concept_audio_summaries.sql en Supabase.");
+    throw existingError;
+  }
+
+  const manifest = await currentManifest(moduleId);
+  const existingRow = existing as ConceptAudioRow | null;
+  const stale = Boolean(existingRow?.manifest_generated_at && manifest.generatedAt && new Date(manifest.generatedAt).getTime() > new Date(existingRow.manifest_generated_at).getTime());
+  if (existingRow?.status === "ready" && !force && !stale) return getConceptAudioSummary(moduleId, topicId, conceptId);
+
+  const now = new Date().toISOString();
+  const { error: markError } = await supabase.from("concept_audio_summaries").upsert({
+    module_id: moduleId,
+    topic_id: topicId,
+    concept_id: conceptId,
+    kind,
+    status: "generating",
+    generation_error: null,
+    updated_at: now,
+  }, { onConflict: "module_id,topic_id,concept_id,kind" });
+  if (markError) throw markError;
+
+  try {
+    const generated = await generateConceptScript(manifest.manifest, topicId, conceptId, kind);
+    const audio = await synthesizeSpeech(generated.script);
+    const stamp = Date.now();
+    const safeTopic = topicId.replace(/[^a-z0-9-_]/gi, "-");
+    const safeConcept = conceptId.replace(/[^a-z0-9-_]/gi, "-");
+    const storagePath = `${moduleId}/concepts/${safeTopic}/${safeConcept}-${stamp}.mp3`;
+    const { error: uploadError } = await supabase.storage.from(AUDIO_BUCKET).upload(storagePath, audio, {
+      contentType: "audio/mpeg",
+      cacheControl: "31536000",
+      upsert: false,
+    });
+    if (uploadError) throw uploadError;
+
+    const charCount = generated.script.length;
+    const seconds = estimatedSeconds(generated.script);
+    const credits = estimatedCredits(charCount, env.model);
+    const generatedAt = new Date().toISOString();
+    const { error: saveError } = await supabase.from("concept_audio_summaries").upsert({
+      module_id: moduleId,
+      topic_id: topicId,
+      concept_id: conceptId,
+      kind,
+      status: "ready",
+      title: generated.title,
+      script_text: generated.script,
+      script_char_count: charCount,
+      estimated_seconds: seconds,
+      estimated_credits: credits,
+      provider: "elevenlabs",
+      model: env.model,
+      voice_id: env.voiceId,
+      storage_bucket: AUDIO_BUCKET,
+      storage_path: storagePath,
+      manifest_generated_at: manifest.generatedAt,
+      generated_at: generatedAt,
+      generation_error: null,
+      updated_at: generatedAt,
+    }, { onConflict: "module_id,topic_id,concept_id,kind" });
+    if (saveError) throw saveError;
+
+    if (existingRow?.storage_path && existingRow.storage_bucket && existingRow.storage_path !== storagePath) {
+      await supabase.storage.from(existingRow.storage_bucket).remove([existingRow.storage_path]);
+    }
+    return getConceptAudioSummary(moduleId, topicId, conceptId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No se pudo generar el audio de esta lección.";
+    await supabase.from("concept_audio_summaries").upsert({
+      module_id: moduleId,
+      topic_id: topicId,
+      concept_id: conceptId,
+      kind,
+      status: "error",
+      generation_error: message,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "module_id,topic_id,concept_id,kind" });
     throw new Error(message);
   }
 }

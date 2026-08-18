@@ -2,45 +2,43 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { type FormEvent, useMemo, useState } from "react";
-import { Archive, BookOpenText, BrainCircuit, ChartNoAxesColumnIncreasing, ChevronLeft, FlaskConical, GraduationCap, ListChecks, MessageSquareText, Pencil, RotateCcw, TestTubeDiagonal, Trash2, X } from "lucide-react";
-import { useModules } from "@/components/module-provider";
+import { type FormEvent, useState } from "react";
+import { Archive, ArrowRight, BookOpen, ChevronLeft, ClipboardList, Pencil, Play, RotateCcw, Settings2, Trash2, X } from "lucide-react";
+import { AudioSummaryPanel } from "@/components/audio-summary-panel";
 import { DocumentPanel } from "@/components/document-panel";
 import { LearningManifestPanel } from "@/components/learning-manifest-panel";
-import { AudioSummaryPanel } from "@/components/audio-summary-panel";
-import { formatModuleUpdated, sortModulesByUpdated } from "@/lib/module-utils";
+import { StudyWorkspace } from "@/components/study-workspace";
+import { useModules } from "@/components/module-provider";
 
-const modes = [
-  { label: "Lector", icon: BookOpenText, code: "D", path: "lector", available: true },
-  { label: "Aprende", icon: GraduationCap, code: "A", path: "aprende", available: true },
-  { label: "Laboratorio", icon: FlaskConical, code: "L", path: "laboratorio", available: true },
-  { label: "Practica", icon: ListChecks, code: "P", path: "practica", available: true },
-  { label: "Evaluación", icon: TestTubeDiagonal, code: "E", path: "evaluacion", available: true },
-  { label: "Tutor IA", icon: MessageSquareText, code: "T", path: "tutor", available: true },
-];
+function ModuleOrbit() {
+  return (
+    <div className="relative mx-auto size-[250px] max-w-full" aria-hidden="true">
+      <div className="lab-orbit absolute inset-0 rounded-full" />
+      <div className="absolute inset-[34px] rounded-full border border-dashed border-accent/30" />
+      <div className="absolute inset-[72px] rounded-full border border-dashed border-accent/40" />
+      <div className="absolute left-1/2 top-1/2 grid size-[88px] -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[26px] bg-gradient-to-br from-[#0f6cbd] to-[#12a7a0] text-center text-white shadow-[0_20px_48px_rgba(15,108,189,.30)]"><div><p className="text-xl font-black">ML</p><p className="meta-font mt-1 text-[7px] uppercase text-white/75">MODULE</p></div></div>
+      <span className="absolute left-1/2 top-[5%] -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 py-1 text-[9px] font-bold text-ink">TEORÍA</span>
+      <span className="absolute right-[1%] top-1/2 -translate-y-1/2 rounded-full border border-line bg-surface px-2.5 py-1 text-[9px] font-bold text-ink">LAB</span>
+      <span className="absolute bottom-[5%] left-1/2 -translate-x-1/2 rounded-full border border-line bg-surface px-2.5 py-1 text-[9px] font-bold text-ink">AUDIO</span>
+      <span className="absolute left-[1%] top-1/2 -translate-y-1/2 rounded-full border border-line bg-surface px-2.5 py-1 text-[9px] font-bold text-ink">PRÁCTICA</span>
+    </div>
+  );
+}
 
 export function ModuleDetailView() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const { modules, hydrated, updateModule, archiveModule, restoreModule, removeModule } = useModules();
-  const [editing, setEditing] = useState(false);
   const studyModule = modules.find((item) => item.slug === params.slug);
-  const ordered = useMemo(() => sortModulesByUpdated(modules), [modules]);
+  const [editing, setEditing] = useState(false);
+  const [workspaceRevision, setWorkspaceRevision] = useState(0);
 
   if (!studyModule) {
-    if (!hydrated) return <div className="mx-auto max-w-[1160px] px-4 py-16 text-sm text-muted sm:px-6 lg:px-10">Cargando módulo…</div>;
-    return (
-      <div className="mx-auto max-w-[900px] px-4 py-16 sm:px-6 lg:px-10">
-        <p className="meta-font text-[9px] font-bold uppercase text-accent">Módulo no encontrado</p>
-        <h1 className="display-font mt-3 text-4xl">Esta ficha ya no existe.</h1>
-        <p className="mt-3 text-base leading-7 text-muted">Puede haber sido eliminada desde la Biblioteca.</p>
-        <Link href="/biblioteca" className="focus-ring mt-6 inline-flex min-h-11 items-center gap-2 font-bold text-accent"><ChevronLeft className="size-4" aria-hidden="true" /> Volver a Biblioteca</Link>
-      </div>
-    );
+    return <div className="app-frame py-12">{hydrated ? <><h1 className="display-font text-4xl">Módulo no encontrado.</h1><Link href="/biblioteca" className="mt-5 inline-flex items-center font-bold text-accent">Volver a Biblioteca</Link></> : <p className="text-sm text-muted">Cargando módulo…</p>}</div>;
   }
 
-  const moduleIndex = ordered.findIndex((item) => item.id === studyModule.id) + 1;
   const archived = studyModule.status === "Archivado";
+  const setupOpen = !studyModule.sourceDocument || studyModule.sourceDocument.extractionStatus !== "ready";
 
   async function onEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,58 +52,65 @@ export function ModuleDetailView() {
   }
 
   async function onDelete() {
-    const confirmed = window.confirm(`¿Eliminar definitivamente “${studyModule!.title}”?\n\nSe borrarán también su documento en Storage, extracción, Manifest, prácticas, dominio, exámenes, Tutor, RAG, ayudas del lector y conexiones relacionadas. Esta acción no se puede deshacer.`);
+    const confirmed = window.confirm(`¿Eliminar definitivamente “${studyModule!.title}”? Esta acción no se puede deshacer.`);
     if (!confirmed) return;
     await removeModule(studyModule!.id);
     router.push("/biblioteca");
   }
 
   return (
-    <div className="mx-auto max-w-[1160px] px-4 py-7 sm:px-6 md:py-10 lg:px-10 lg:py-12">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/biblioteca" className="focus-ring inline-flex min-h-11 items-center gap-1 text-sm font-bold text-muted transition-colors hover:text-accent"><ChevronLeft className="size-4" aria-hidden="true" /> Índice de módulos</Link>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setEditing((value) => !value)} className="focus-ring inline-flex min-h-11 items-center gap-2 border border-line-strong px-3 text-xs font-bold text-muted hover:border-accent hover:text-accent">{editing ? <X className="size-3.5" aria-hidden="true" /> : <Pencil className="size-3.5" aria-hidden="true" />}{editing ? "Cerrar edición" : "Editar ficha"}</button>
-          <button type="button" onClick={() => archived ? restoreModule(studyModule.id) : archiveModule(studyModule.id)} className="focus-ring inline-flex min-h-11 items-center gap-2 border border-line-strong px-3 text-xs font-bold text-muted hover:border-accent hover:text-accent">{archived ? <RotateCcw className="size-3.5" aria-hidden="true" /> : <Archive className="size-3.5" aria-hidden="true" />}{archived ? "Restaurar" : "Archivar"}</button>
-          <button type="button" onClick={onDelete} className="focus-ring inline-flex min-h-11 items-center gap-2 border border-warn/60 px-3 text-xs font-bold text-warn hover:bg-warn hover:text-white"><Trash2 className="size-3.5" aria-hidden="true" /> Eliminar</button>
+    <div className="app-frame py-6 lg:py-8">
+      <section className="lab-hero lab-enter grid gap-6 rounded-[26px] p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center lg:p-9">
+        <div>
+          <Link href="/biblioteca" className="focus-ring inline-flex min-h-9 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-muted hover:text-ink"><ChevronLeft className="size-4" /> Biblioteca</Link>
+          <p className="meta-font mt-5 inline-flex rounded-full bg-[#0b4167] px-3 py-1.5 text-[9px] font-black uppercase text-[#d7efff]">{studyModule.subject}</p>
+          <h1 className="display-font mt-4 max-w-5xl text-[clamp(2rem,3.15vw,3.55rem)] leading-[1.03] text-ink">{studyModule.title}</h1>
+          <p className="mt-4 max-w-3xl text-[17px] leading-7 text-muted">{studyModule.description}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <a href="#study-workspace" className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-bold text-white shadow-[0_10px_24px_rgba(15,108,189,.20)]"><Play className="size-4 fill-current" /> Continuar aprendiendo</a>
+            <Link href={`/modulos/${studyModule.slug}/tareas`} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface px-5 text-sm font-bold text-ink"><ClipboardList className="size-4 text-accent" /> Tareas</Link>
+            <Link href={`/modulos/${studyModule.slug}/lector`} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface px-5 text-sm font-bold text-ink"><BookOpen className="size-4" /> Guía PDF</Link>
+          </div>
         </div>
-      </div>
-
-      {archived && <div className="mt-4 border-l-4 border-warn bg-accent-soft/35 p-4 text-sm leading-6 text-ink"><strong>Módulo archivado.</strong> Sigue siendo consultable, pero no aparece entre tus módulos activos. Puedes restaurarlo cuando quieras.</div>}
-
-      <header className="mt-4 grid gap-6 border-b-2 border-ink pb-8 lg:grid-cols-[82px_minmax(0,1fr)_230px] lg:items-end">
-        <div className="hidden lg:block"><span className="display-font text-6xl text-line-strong">{String(moduleIndex).padStart(2, "0")}</span><p className="meta-font mt-1 text-[8px] uppercase text-muted">Módulo</p></div>
-        <div><p className="meta-font text-[9px] font-bold uppercase leading-5 text-accent">{studyModule.subject}</p><h1 className="display-font mt-2 max-w-4xl text-4xl leading-[0.98] sm:text-5xl md:text-6xl">{studyModule.title}</h1><p className="mt-4 max-w-3xl text-sm leading-6 text-muted">{studyModule.description}</p></div>
-        <div className="border-l-2 border-accent pl-4"><div className="flex items-baseline justify-between gap-4"><span className="meta-font text-[9px] uppercase text-muted">Avance</span><span className="display-font text-3xl">{studyModule.progress}%</span></div><div className="mt-2 h-[5px] bg-surface-strong" aria-hidden="true"><div className="h-full bg-accent" style={{ width: `${studyModule.progress}%` }} /></div><p className="mt-2 text-xs text-muted">{studyModule.topics} temas · {formatModuleUpdated(studyModule.updatedAt)}</p></div>
-      </header>
-
-      {editing && (
-        <form onSubmit={onEdit} className="paper-sheet mt-6 border border-line p-5 sm:p-6">
-          <div className="flex items-end justify-between gap-4 border-b border-line pb-4"><div><p className="meta-font text-[9px] font-bold uppercase text-accent">Gestión del módulo</p><h2 className="display-font mt-1 text-2xl">Editar ficha</h2></div><span className="meta-font text-[9px] uppercase text-muted">Slug estable · {studyModule.slug}</span></div>
-          <div className="mt-5 grid gap-5 md:grid-cols-2"><div><label htmlFor="edit-title" className="mb-2 block text-sm font-bold">Título</label><input id="edit-title" name="title" required defaultValue={studyModule.title} className="focus-ring min-h-12 w-full border border-line-strong bg-transparent px-4 text-base outline-none focus:border-accent" /></div><div><label htmlFor="edit-subject" className="mb-2 block text-sm font-bold">Materia</label><input id="edit-subject" name="subject" required defaultValue={studyModule.subject} className="focus-ring min-h-12 w-full border border-line-strong bg-transparent px-4 text-base outline-none focus:border-accent" /></div><div className="md:col-span-2"><label htmlFor="edit-description" className="mb-2 block text-sm font-bold">Descripción</label><textarea id="edit-description" name="description" rows={4} defaultValue={studyModule.description} className="focus-ring w-full border border-line-strong bg-transparent px-4 py-3 text-base leading-6 outline-none focus:border-accent" /></div></div>
-          <div className="mt-5 flex flex-col-reverse gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between"><button type="button" onClick={onDelete} className="focus-ring inline-flex min-h-11 items-center justify-center gap-2 border border-warn px-4 text-xs font-bold text-warn hover:bg-accent-soft/40"><Trash2 className="size-3.5" aria-hidden="true" /> Eliminar módulo</button><button type="submit" className="focus-ring inline-flex min-h-11 items-center justify-center bg-ink px-5 text-sm font-bold text-white hover:bg-accent">Guardar cambios</button></div>
-        </form>
-      )}
-
-      <DocumentPanel module={studyModule} />
-      <LearningManifestPanel module={studyModule} />
-      <AudioSummaryPanel moduleId={studyModule.id} />
-
-      <section className="mt-8 border-b border-line">
-        <p className="meta-font mb-2 text-[9px] font-bold uppercase text-muted">Modos de aprendizaje</p>
-        <div className="flex gap-1 overflow-x-auto scrollbar-none">
-          {modes.map(({ label, icon: Icon, code, path, available }) => available ? (
-            <Link key={label} href={`/modulos/${studyModule.slug}/${path}`} className="focus-ring relative flex min-h-12 shrink-0 items-center gap-2 px-3.5 text-sm font-bold text-accent transition-colors duration-200 sm:px-5"><span className="meta-font grid size-6 place-items-center border border-accent text-[9px]">{code}</span><Icon className="size-4 sm:hidden" aria-hidden="true" /><span>{label}</span><span className="absolute inset-x-0 bottom-0 h-0.5 bg-accent" aria-hidden="true" /></Link>
-          ) : (
-            <span key={label} className="relative flex min-h-12 shrink-0 cursor-not-allowed items-center gap-2 px-3.5 text-sm font-bold text-muted/65 sm:px-5" title="Disponible en próximos bloques"><span className="meta-font grid size-6 place-items-center border border-line text-[9px]">{code}</span><Icon className="size-4 sm:hidden" aria-hidden="true" /><span>{label}</span></span>
-          ))}
-        </div>
+        <ModuleOrbit />
       </section>
 
-      <section className="mt-8 grid gap-6 border-b border-line pb-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div><p className="meta-font text-[9px] font-bold uppercase text-accent">Vertical slice actual</p><h2 className="display-font mt-2 text-3xl sm:text-4xl">Comprende → experimenta → practica → demuestra.</h2><p className="mt-3 max-w-3xl text-base leading-7 text-muted">El Bloque 8 cierra la primera versión: además de aprender, experimentar, practicar y demostrar, ahora puedes leer la fuente cómodamente, preguntar con RAG y conectar conceptos entre materias.</p><div className="mt-5 flex flex-wrap gap-2"><Link href={`/progreso?module=${encodeURIComponent(studyModule.id)}`} className="focus-ring inline-flex min-h-11 items-center gap-2 border border-line-strong px-4 text-xs font-bold text-muted hover:border-accent hover:text-accent"><ChartNoAxesColumnIncreasing className="size-3.5" /> Ver dominio</Link><Link href={`/modulos/${studyModule.slug}/refuerzo`} className="focus-ring inline-flex min-h-11 items-center gap-2 bg-ink px-4 text-xs font-bold text-white hover:bg-accent"><BrainCircuit className="size-3.5" /> Sesión adaptativa</Link></div></div>
-        <div className="border-l-2 border-moss pl-4"><p className="meta-font text-[9px] font-bold uppercase text-moss">Sistema integrado</p><p className="mt-2 text-sm font-bold">Lector · Tutor RAG · Dominio · Conexiones</p><p className="mt-2 text-xs leading-5 text-muted">La fuente permanece visible en todo momento. El Tutor recupera fragmentos verificables y el mapa de conexiones une conceptos de diferentes módulos sin perder su procedencia.</p></div>
+      <section className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="lab-stat rounded-[16px] p-4"><p className="meta-font text-[9px] font-bold uppercase text-muted">Avance</p><p className="mt-2 text-2xl font-black text-ink">{studyModule.progress}%</p><div className="lab-progress-track mt-3 h-1.5 overflow-hidden rounded-full"><div className="lab-progress-fill h-full rounded-full" style={{ width: `${studyModule.progress}%` }} /></div></div>
+        <div className="lab-stat rounded-[16px] p-4"><p className="meta-font text-[9px] font-bold uppercase text-muted">Contenido</p><p className="mt-2 text-2xl font-black text-ink">{studyModule.topics}</p><p className="mt-1 text-[13px] text-muted">temas detectados</p></div>
+        <div className="lab-stat rounded-[16px] p-4"><p className="meta-font text-[9px] font-bold uppercase text-muted">Estado</p><p className="mt-2 text-2xl font-black text-ink">{studyModule.status}</p><p className="mt-1 text-[13px] text-muted">ruta actual</p></div>
+        <div className="lab-stat rounded-[16px] p-4"><p className="meta-font text-[9px] font-bold uppercase text-muted">Fuente</p><p className="mt-2 text-lg font-black text-ink">{studyModule.sourceDocument ? studyModule.sourceDocument.kind : "Pendiente"}</p><p className="mt-1 truncate text-[13px] text-muted">{studyModule.sourceDocument?.name || "Vincula un documento"}</p></div>
       </section>
+
+      {archived && <div className="mt-3 rounded-2xl border border-warn/30 bg-surface p-4 text-sm leading-6 text-ink"><strong>Módulo archivado.</strong> Puedes seguir estudiándolo o restaurarlo desde configuración.</div>}
+
+      <StudyWorkspace key={`${studyModule.id}-${workspaceRevision}`} module={studyModule} />
+
+      <details id="module-setup" open={setupOpen} className="lab-card mt-5 rounded-[22px] p-5 sm:p-6">
+        <summary className="focus-ring flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-black text-ink">
+          <span className="inline-flex items-center gap-2"><Settings2 className="size-4 text-muted" /> Fuente y configuración del módulo</span>
+          <span className="meta-font text-[8px] uppercase text-muted">Solo cuando lo necesites</span>
+        </summary>
+
+        <div className="mt-5 border-t border-line pt-1">
+          <DocumentPanel module={studyModule} />
+          <LearningManifestPanel module={studyModule} onGenerated={() => setWorkspaceRevision((value) => value + 1)} />
+          <AudioSummaryPanel moduleId={studyModule.id} />
+
+          <section className="mt-8 border-t border-line pt-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div><p className="meta-font text-[9px] font-bold uppercase text-muted">Administración</p><h2 className="mt-1 text-2xl font-extrabold text-ink">Ficha del módulo</h2></div>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" onClick={() => setEditing((value) => !value)} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-muted">{editing ? <X className="size-3.5" /> : <Pencil className="size-3.5" />}{editing ? "Cerrar" : "Editar"}</button>
+                <button type="button" onClick={() => archived ? restoreModule(studyModule.id) : archiveModule(studyModule.id)} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-line bg-surface px-3 text-xs font-bold text-muted">{archived ? <RotateCcw className="size-3.5" /> : <Archive className="size-3.5" />}{archived ? "Restaurar" : "Archivar"}</button>
+                <button type="button" onClick={onDelete} className="focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-warn/40 bg-surface px-3 text-xs font-bold text-warn"><Trash2 className="size-3.5" /> Eliminar</button>
+              </div>
+            </div>
+
+            {editing && <form onSubmit={onEdit} className="mt-5 grid gap-4 rounded-2xl bg-surface-strong p-4 md:grid-cols-2"><label className="text-sm font-bold">Título<input name="title" required defaultValue={studyModule.title} className="focus-ring mt-2 min-h-11 w-full rounded-xl border border-line bg-surface px-3" /></label><label className="text-sm font-bold">Materia<input name="subject" required defaultValue={studyModule.subject} className="focus-ring mt-2 min-h-11 w-full rounded-xl border border-line bg-surface px-3" /></label><label className="text-sm font-bold md:col-span-2">Descripción<textarea name="description" rows={3} defaultValue={studyModule.description} className="focus-ring mt-2 w-full rounded-xl border border-line bg-surface px-3 py-3" /></label><div className="md:col-span-2"><button type="submit" className="focus-ring min-h-11 rounded-xl bg-accent px-4 text-sm font-bold text-white">Guardar cambios</button></div></form>}
+          </section>
+        </div>
+      </details>
     </div>
   );
 }

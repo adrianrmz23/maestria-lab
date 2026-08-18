@@ -1,4 +1,4 @@
-import type { AudioSummaryKind, AudioSummaryResponse } from "@/lib/audio/types";
+import type { AudioSummaryKind, AudioSummaryResponse, ConceptAudioKind, ConceptAudioResponse } from "@/lib/audio/types";
 
 type ErrorPayload = { error?: string };
 
@@ -20,4 +20,19 @@ export async function generateAudioSummary(moduleId: string, kind: AudioSummaryK
     body: JSON.stringify({ kind, force }),
   });
   return readJson<AudioSummaryResponse>(response);
+}
+
+export async function getConceptAudio(moduleId: string, topicId: string, conceptId: string) {
+  const query = new URLSearchParams({ topicId, conceptId });
+  const response = await fetch(`/api/modules/${encodeURIComponent(moduleId)}/audio/concept?${query.toString()}`, { cache: "no-store" });
+  return readJson<ConceptAudioResponse>(response);
+}
+
+export async function generateConceptAudio(moduleId: string, topicId: string, conceptId: string, kind: ConceptAudioKind = "lesson", force = false) {
+  const response = await fetch(`/api/modules/${encodeURIComponent(moduleId)}/audio/concept`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ topicId, conceptId, kind, force }),
+  });
+  return readJson<ConceptAudioResponse>(response);
 }

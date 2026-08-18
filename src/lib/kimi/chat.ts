@@ -6,6 +6,12 @@ export function getKimiEnvironment() {
   return apiKey ? { apiKey, model } : null;
 }
 
+export function getKimiTaskEnvironment() {
+  const base = getKimiEnvironment();
+  if (!base) return null;
+  return { ...base, model: process.env.KIMI_TASK_MODEL?.trim() || base.model };
+}
+
 type KimiPayload = {
   choices?: Array<{ message?: { content?: string }; finish_reason?: string }>;
   error?: { message?: string };
@@ -15,13 +21,16 @@ export async function requestKimiJson<T>({
   system,
   user,
   maxCompletionTokens = 2600,
+  modelOverride,
 }: {
   system: string;
   user: string;
   maxCompletionTokens?: number;
+  modelOverride?: string;
 }): Promise<{ data: T; model: string }> {
   const environment = getKimiEnvironment();
   if (!environment) throw new Error("Kimi no está configurado. Agrega KIMI_API_KEY si quieres usar este proveedor.");
+  const model = modelOverride || environment.model;
 
   const response = await fetch(KIMI_API_URL, {
     method: "POST",
@@ -30,7 +39,7 @@ export async function requestKimiJson<T>({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: environment.model,
+      model,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
@@ -47,7 +56,7 @@ export async function requestKimiJson<T>({
   if (!content) throw new Error("Kimi no devolvió contenido.");
 
   try {
-    return { data: JSON.parse(content) as T, model: environment.model };
+    return { data: JSON.parse(content) as T, model };
   } catch {
     throw new Error("Kimi devolvió una respuesta que no pudo interpretarse como JSON.");
   }

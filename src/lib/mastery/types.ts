@@ -88,7 +88,7 @@ export type ExamEvaluation = {
   sessionScore: number | null;
 };
 
-export type StudyDuration = 5 | 10 | 15 | 30 | 45;
+export type StudyDuration = 5 | 10 | 15 | 20 | 30 | 40 | 45;
 export type StudyStepKind = "learn" | "lab" | "practice" | "exam" | "recall";
 
 export type StudyPlanStep = {

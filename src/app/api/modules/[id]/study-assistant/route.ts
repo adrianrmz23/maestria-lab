@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 180;
 
 type RouteContext = { params: Promise<{ id: string }> };
-const actions = new Set<StudyAssistantAction>(["deeper", "example", "python", "question", "connection", "custom"]);
+const actions = new Set<StudyAssistantAction>(["simple", "analogy", "visual", "deeper", "example", "python", "question", "connection", "custom"]);
 
 export async function POST(request: Request, context: RouteContext) {
   if (!getSupabaseEnvironment()) return NextResponse.json({ error: "Supabase no está configurado." }, { status: 503 });

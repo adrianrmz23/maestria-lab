@@ -9,6 +9,12 @@ export function getOpenAIEnvironment() {
   return apiKey ? { apiKey, model } : null;
 }
 
+export function getOpenAITaskEnvironment() {
+  const base = getOpenAIEnvironment();
+  if (!base) return null;
+  return { ...base, model: process.env.OPENAI_TASK_MODEL?.trim() || base.model };
+}
+
 type ResponsePayload = {
   output_text?: string;
   output?: Array<{
@@ -35,6 +41,8 @@ type StructuredRequest = {
   user: string;
   reasoning?: "minimal" | "low" | "medium" | "high";
   verbosity?: "low" | "medium" | "high";
+  modelOverride?: string;
+  webSearch?: boolean;
 };
 
 export async function requestStructuredOutput<T>({
@@ -44,6 +52,8 @@ export async function requestStructuredOutput<T>({
   user,
   reasoning = "medium",
   verbosity = "medium",
+  modelOverride,
+  webSearch = false,
 }: StructuredRequest): Promise<{ data: T; model: string }> {
   const environment = getOpenAIEnvironment();
   if (!environment) throw new Error("Falta OPENAI_API_KEY. Agrégala a .env.local para usar las funciones de IA.");
@@ -55,7 +65,7 @@ export async function requestStructuredOutput<T>({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: environment.model,
+      model: modelOverride || environment.model,
       store: false,
       reasoning: { effort: reasoning },
       text: {
@@ -67,6 +77,7 @@ export async function requestStructuredOutput<T>({
           schema,
         },
       },
+      ...(webSearch ? { tools: [{ type: "web_search" }] } : {}),
       input: [
         { role: "developer", content: [{ type: "input_text", text: developer }] },
         { role: "user", content: [{ type: "input_text", text: user }] },
@@ -80,10 +91,61 @@ export async function requestStructuredOutput<T>({
   if (!text) throw new Error("OpenAI no devolvió contenido estructurado.");
 
   try {
-    return { data: JSON.parse(text) as T, model: environment.model };
+    return { data: JSON.parse(text) as T, model: modelOverride || environment.model };
   } catch {
     throw new Error("La respuesta de IA no pudo interpretarse como JSON estructurado.");
   }
+}
+
+
+export async function extractTaskImageText(buffer: Buffer, mimeType: string, filename = "captura") {
+  const environment = getOpenAITaskEnvironment();
+  if (!environment) throw new Error("Falta OPENAI_API_KEY para interpretar capturas o imágenes de la tarea.");
+  const supportedMime = new Set(["image/png", "image/jpeg", "image/webp"]);
+  const normalizedMime = mimeType === "image/jpg" ? "image/jpeg" : mimeType;
+  if (!supportedMime.has(normalizedMime)) throw new Error("La imagen debe ser PNG, JPG/JPEG o WEBP.");
+  const dataUrl = `data:${normalizedMime};base64,${buffer.toString("base64")}`;
+  const response = await fetch(OPENAI_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${environment.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: environment.model,
+      store: false,
+      reasoning: { effort: "low" },
+      text: { verbosity: "medium" },
+      input: [
+        {
+          role: "developer",
+          content: [{
+            type: "input_text",
+            text: [
+              "Eres el extractor visual de Academic Task Studio.",
+              "La imagen contiene una consigna, rúbrica, instrucciones académicas, apuntes o material complementario.",
+              "Transcribe fielmente todo el texto legible y conserva la jerarquía visual útil: títulos, apartados, criterios, porcentajes, tablas simples, listas, fechas y restricciones.",
+              "No inventes texto ilegible. Si una zona no puede leerse, indícalo como [texto no legible].",
+              "Después de la transcripción agrega una sección breve titulada ESTRUCTURA VISUAL con cualquier relación relevante entre bloques, columnas, flechas o niveles jerárquicos.",
+              "Devuelve solo texto plano, sin Markdown complejo.",
+            ].join("\n"),
+          }],
+        },
+        {
+          role: "user",
+          content: [
+            { type: "input_text", text: `Extrae la información académica útil de ${filename}.` },
+            { type: "input_image", image_url: dataUrl },
+          ],
+        },
+      ],
+    }),
+  });
+  const payload = await response.json() as ResponsePayload;
+  if (!response.ok) throw new Error(payload.error?.message || `OpenAI respondió con ${response.status} al interpretar la imagen.`);
+  const output = extractOutputText(payload).trim();
+  if (!output) throw new Error("No se pudo extraer texto útil de la imagen.");
+  return { text: output, model: environment.model };
 }
 
 export async function generateStructuredLearningManifest(input: string): Promise<{ manifest: LearningManifest; model: string }> {

@@ -188,6 +188,18 @@ function normalizeExperience(experience: ConceptExperience, topicId: string, con
     if (!experience.lab.codeSnippet || experience.lab.codeOptions.length < 2 || experience.lab.codeAnswerIndex === null) throw new Error("El laboratorio de código necesita fragmento, opciones y respuesta.");
     if (experience.lab.codeAnswerIndex >= experience.lab.codeOptions.length) throw new Error("El índice de respuesta del laboratorio de código no existe en las opciones.");
   }
+  if (experience.lab.type === "probability_simulator") {
+    if (experience.lab.parameters.length < 1) throw new Error("El simulador de probabilidad necesita al menos un parámetro.");
+  }
+  if (experience.lab.type === "statistics_outlier") {
+    if (experience.lab.dataset.length < 5) throw new Error("El laboratorio estadístico necesita al menos 5 datos.");
+  }
+  if (experience.lab.type === "ml_threshold") {
+    if (experience.lab.dataset.length < 6 || experience.lab.binaryLabels.length !== experience.lab.dataset.length) throw new Error("El laboratorio de threshold necesita scores y etiquetas alineadas.");
+  }
+  if (experience.lab.type === "vector_transform") {
+    if (experience.lab.matrix.length !== 4 || experience.lab.vector.length !== 2) throw new Error("La transformación vectorial necesita una matriz 2x2 y un vector de 2 componentes.");
+  }
 
   for (const exercise of [...experience.inlineQuiz, ...experience.exercises]) {
     if (exercise.type === "short_answer") {
@@ -237,10 +249,15 @@ export async function generateExperienceForConcept(moduleId: string, topicId: st
   const developer = [
     "Eres el diseñador de experiencias de Maestría Lab para una Maestría en Inteligencia Artificial y Ciencia de Datos.",
     "Debes convertir UN concepto ya estructurado en una experiencia práctica útil, no en decoración interactiva.",
-    "Elige exactamente un laboratorio de este registro: logic_switch, truth_table, matching, sequence, code_prediction.",
+    "Elige exactamente un laboratorio de este registro: logic_switch, truth_table, matching, sequence, code_prediction, probability_simulator, statistics_outlier, ml_threshold, vector_transform.",
     "Usa logic_switch o truth_table cuando el concepto realmente trate proposiciones, conectivos, lógica booleana o evaluación de expresiones. En esos laboratorios usa exactamente 2 proposiciones para operadores binarios y 1 para NOT.",
     "Usa code_prediction solo si el concepto puede aprenderse razonando sobre un fragmento pequeño de Python.",
     "Usa matching para relaciones término-definición o elemento-propiedad y sequence para procesos con orden causal o algorítmico.",
+    "Usa probability_simulator cuando el concepto trate probabilidad, Bernoulli, frecuencia, incertidumbre o simulación. parameters debe incluir al menos p (0..1) y opcionalmente trials; deja dataset/binaryLabels/matrix/vector vacíos si no aplican.",
+    "Usa statistics_outlier cuando sea útil observar cómo un dato extremo cambia media/mediana. dataset debe contener entre 5 y 12 valores pequeños y plausibles; parameters puede quedar vacío.",
+    "Usa ml_threshold cuando el concepto trate clasificación, threshold, precision/recall, falsos positivos o decisiones por score. dataset contiene scores 0..1 y binaryLabels etiquetas 0/1 del mismo tamaño; parameters incluye threshold 0..1.",
+    "Usa vector_transform para vectores, matrices o transformaciones 2D. matrix debe tener [a,b,c,d] para una matriz 2x2 y vector [x,y]; parameters puede incluir x/y si quieres permitir manipulación.",
+    "Para cualquier laboratorio no utilizado, devuelve parameters, dataset, binaryLabels, matrix y vector como arreglos vacíos. Para los tipos nuevos, completa solo los campos que realmente correspondan.",
     "No fuerces un laboratorio llamativo si uno sencillo enseña mejor.",
     "Genera inlineQuiz con EXACTAMENTE 6 preguntas. Es un checkpoint del contenido YA VISTO, no un examen de lo que viene después.",
     "REGLA DE FRONTERA: cada pregunta de inlineQuiz debe poder resolverse usando únicamente ALCANCE VISIBLE Y EVALUABLE. Las unidades de fuente sirven para verificar, pero NO te autorizan a introducir términos, operadores, reglas, símbolos o propiedades que no aparezcan en ese alcance visible.",
@@ -294,6 +311,9 @@ export async function generateExperienceForConcept(moduleId: string, topicId: st
 export async function runStudyAssistant(moduleId: string, topicId: string, conceptId: string, action: StudyAssistantAction, question?: string) {
   const context = await loadContext(moduleId, topicId, conceptId);
   const instructions: Record<StudyAssistantAction, string> = {
+    simple: "Explícalo de nuevo con lenguaje muy claro y directo, sin perder ninguna condición esencial. Usa una idea por frase y termina con una comprobación de una sola pregunta.",
+    analogy: "Crea una analogía cotidiana breve y precisa que conserve la estructura del concepto. En answer usa entre 80 y 130 palabras, organizadas en exactamente tres microbloques: Analogía:, Mapeo: y Límite:. Cada microbloque debe tener 1 a 2 frases. Evita rodeos, introducciones largas y ejemplos secundarios.",
+    visual: "Explícalo como un diagrama textual paso a paso. En answer usa flechas, bloques y relaciones legibles en texto; después añade 2-3 frases que interpreten el diagrama. No inventes una imagen externa.",
     deeper: "Explica el concepto con rigor pero en formato de repaso. En answer usa aproximadamente 90-140 palabras y exactamente tres microbloques de 1-2 frases, etiquetados como Idea:, Cómo funciona: y Ejemplo:. Evita historia, listas exhaustivas, derivaciones largas y repetir la capa Nivel Maestría. Usa takeaways para 3 ideas que conviene memorizar o comprobar después.",
     example: "Crea un ejemplo nuevo, paso a paso, distinto de los ya presentes. Debe obligar a aplicar el concepto y terminar explicando por qué funciona.",
     python: "Conecta el concepto con Python o pseudocódigo cuando tenga sentido. Si no existe una traducción honesta a código, explica por qué y usa code=null.",
