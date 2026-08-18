@@ -2,8 +2,10 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 export const DOCUMENT_BUCKET = "maestria-documents";
 export const AUDIO_BUCKET = "maestria-audio";
+export const RESOURCE_BUCKET = "maestria-resources";
 export const DOCUMENT_MAX_BYTES = 50 * 1024 * 1024;
 export const AUDIO_MAX_BYTES = 50 * 1024 * 1024;
+export const RESOURCE_MAX_BYTES = 100 * 1024 * 1024;
 
 let adminClient: SupabaseClient | null = null;
 
@@ -83,3 +85,29 @@ export async function ensureAudioBucket() {
   return created;
 }
 
+
+export async function ensureResourceBucket() {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase.storage.getBucket(RESOURCE_BUCKET);
+  if (!error && data) return data;
+
+  const message = error?.message?.toLowerCase() ?? "";
+  const missing = message.includes("not found") || message.includes("does not exist") || message.includes("404");
+  if (error && !missing) throw error;
+
+  const { data: created, error: createError } = await supabase.storage.createBucket(RESOURCE_BUCKET, {
+    public: false,
+    allowedMimeTypes: [
+      "audio/mpeg", "audio/mp4", "audio/x-m4a", "audio/wav", "audio/x-wav", "audio/ogg",
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword",
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation", "application/vnd.ms-powerpoint",
+      "image/png", "image/jpeg", "image/webp", "image/gif",
+      "video/mp4", "video/webm", "video/quicktime",
+      "text/plain", "text/markdown", "application/octet-stream"
+    ],
+    fileSizeLimit: RESOURCE_MAX_BYTES,
+  });
+  if (createError) throw createError;
+  return created;
+}

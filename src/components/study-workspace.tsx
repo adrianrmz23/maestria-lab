@@ -27,6 +27,7 @@ import { ContextTutorPanel } from "@/components/learning/context-tutor-panel";
 import { InteractiveLab } from "@/components/learning/interactive-lab";
 import { QuickPractice } from "@/components/learning/quick-practice";
 import { SmartNotesPanel } from "@/components/learning/smart-notes-panel";
+import { ConceptResourceStrip } from "@/components/resources/concept-resource-strip";
 import { generateConceptExperience, getConceptExperience } from "@/lib/experience-api";
 import { getLearningManifest } from "@/lib/learning-api";
 import { getLearningDashboard, trackLearningProgress } from "@/lib/learning-engine-api";
@@ -220,6 +221,8 @@ export function StudyWorkspace({ module }: { module: StudyModule }) {
             <NumberedHeading number="04" eyebrow="Audio contextual" title="Escucha solo esta lección" />
             <div className="mt-5"><ConceptAudioPanel moduleId={module.id} topicId={topic.id} conceptId={concept.id} conceptTitle={concept.title} /></div>
           </section>
+
+          <ConceptResourceStrip moduleId={module.id} topicId={topic.id} conceptId={concept.id} />
 
           {concept.commonMistakes.length > 0 && (
             <section className="border-b study-line py-7">

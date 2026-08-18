@@ -8,6 +8,7 @@ import { AudioSummaryPanel } from "@/components/audio-summary-panel";
 import { DocumentPanel } from "@/components/document-panel";
 import { LearningManifestPanel } from "@/components/learning-manifest-panel";
 import { StudyWorkspace } from "@/components/study-workspace";
+import { ModuleResourceHub } from "@/components/resources/module-resource-hub";
 import { useModules } from "@/components/module-provider";
 
 function ModuleOrbit() {
@@ -74,6 +75,8 @@ export function ModuleDetailView() {
         </div>
         <ModuleOrbit />
       </section>
+
+      <ModuleResourceHub moduleId={studyModule.id} />
 
       <section className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className="lab-stat rounded-[16px] p-4"><p className="meta-font text-[9px] font-bold uppercase text-muted">Avance</p><p className="mt-2 text-2xl font-black text-ink">{studyModule.progress}%</p><div className="lab-progress-track mt-3 h-1.5 overflow-hidden rounded-full"><div className="lab-progress-fill h-full rounded-full" style={{ width: `${studyModule.progress}%` }} /></div></div>

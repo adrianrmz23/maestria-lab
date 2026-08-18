@@ -119,3 +119,13 @@ Después de la migración 012 ejecuta también:
 `supabase/migrations/013_academic_task_studio.sql`
 
 Esta migración agrega tareas académicas, historial de versiones y fuentes adicionales por tarea.
+
+## Bloque 12.2 · Recursos del módulo
+
+Después de las migraciones anteriores ejecuta también:
+
+```text
+supabase/migrations/014_module_resources.sql
+```
+
+La aplicación crea bajo demanda el bucket privado `maestria-resources` al subir el primer recurso. No necesitas agregar variables de entorno nuevas.

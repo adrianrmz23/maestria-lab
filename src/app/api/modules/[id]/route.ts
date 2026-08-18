@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin, getSupabaseEnvironment } from "@/lib/supabase/admin";
 import { removeModuleAudioFiles } from "@/lib/audio/server";
 import { removeStoredDocument } from "@/lib/supabase/documents";
+import { removeModuleResourceFiles } from "@/lib/resources/server";
 import { mapModuleRow, type DocumentRow, type ModuleRow } from "@/lib/supabase/mappers";
 import type { ModuleStatus } from "@/lib/mock-data";
 
@@ -59,6 +60,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     if (documentError) throw documentError;
 
     await removeModuleAudioFiles(id);
+    await removeModuleResourceFiles(id);
 
     if (documentRow) {
       // Para una limpieza real, Storage se elimina antes que la fila. Si falla, detenemos
